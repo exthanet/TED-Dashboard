@@ -411,27 +411,32 @@ export async function loadRevenueDataFromFirebase(): Promise<RevenueData | null>
 }
 
 /** Affiliate from the three Studio exports in Google Sheets (affiliateSheets/current); null when none or not readable. */
-export async function loadAffiliateSheets(collectionName = "affiliateSheets"): Promise<(AffiliateSheets & { readAt?: string }) | null> {
+export async function loadAffiliateSheets(collectionName = "affiliateSheets", strict = false): Promise<(AffiliateSheets & { readAt?: string }) | null> {
   try {
     const snap = await getDocs(collection(db, collectionName));
     const main = snap.docs.find((d) => d.id === "current");
     if (!main) return null;
     const months = snap.docs.filter((d) => d.id.startsWith("m_")).map((d) => d.data() as AffiliateStoreMonth);
     return joinFromStore(main.data() as AffiliateStoreMain, months);
-  } catch {
+  } catch (e) {
+    // strict: a failed read must not look like "nothing stored" (an import would then drop every other month).
+    if (strict) throw e;
     return null;
   }
 }
 
-/** Import Affiliate: the draft the sync read, saved as the affiliate data (current + one document per month; months gone are removed). */
-export async function saveAffiliateSheets(data: AffiliateSheets & { readAt?: string }): Promise<void> {
+/**
+ * Import Affiliate: the merged data saved as the affiliate data (current + one document per month).
+ * Month documents are never removed by an import; only the months named in `removeMonths` (the
+ * admin's delete button) are.
+ */
+export async function saveAffiliateSheets(data: AffiliateSheets & { readAt?: string }, removeMonths: string[] = []): Promise<void> {
   // Firestore refuses undefined fields: a JSON round trip drops them.
   const plain = <T,>(x: T): T => JSON.parse(JSON.stringify(x));
   const { main, months } = splitForStore(data);
   for (const m of months) await setDoc(doc(db, "affiliateSheets", `m_${m.month}`), plain(m));
   await setDoc(doc(db, "affiliateSheets", "current"), plain({ ...main, importedAt: new Date().toISOString() }));
-  const keep = new Set(["current", ...months.map((m) => `m_${m.month}`)]);
-  for (const d of (await getDocs(collection(db, "affiliateSheets"))).docs) if (!keep.has(d.id)) await deleteDoc(d.ref);
+  for (const m of removeMonths) if (!months.some((x) => x.month === m)) await deleteDoc(doc(db, "affiliateSheets", `m_${m}`));
 }
 
 /** YouTube Revenue from the API (revenueApi/{YYYY-MM}, the daily sync); [] when none or not readable. */

@@ -7,7 +7,7 @@
 //
 // Relative imports only: the sync runs this file directly with Node.
 import * as XLSX from "xlsx";
-import { diffAffiliate, joinFromStore, mergeAffiliate, readAffiliateSheets, splitForStore, type AffiliateSheets, type AffiliateStoreMain, type AffiliateStoreMonth, type SheetTabs } from "../dashboard/affiliateSheets.ts";
+import { diffAffiliate, isAdRevenueExport, joinFromStore, mergeAffiliate, readAffiliateSheets, splitForStore, type AffiliateSheets, type AffiliateStoreMain, type AffiliateStoreMonth, type SheetTabs } from "../dashboard/affiliateSheets.ts";
 import { decodeFields, docId, encodeFields, getAccessToken, type Firestore, type ServiceAccount } from "./firestoreRest.ts";
 import { DRIVE_SCOPE, downloadSheet, sheetIdOf } from "./revenueSheet.ts";
 
@@ -76,7 +76,7 @@ export async function checkAffiliateSheets(db: Firestore, sa: ServiceAccount | n
       const tabs = tabsOf(await downloadSheet(id, token, fetcher));
       books.push(tabs);
       const src = readAffiliateSheets([tabs]).sources[0];
-      status.links.push({ url, ok: src.kind !== "unknown", kind: src.kind, rows: src.rows, ...(src.month ? { month: src.month } : {}), ...(src.from ? { from: src.from, to: src.to } : {}), ...(src.metrics ? { metrics: src.metrics } : {}), ...(src.kind === "unknown" ? { error: "ไม่รู้จักรูปแบบไฟล์ (ต้องเป็น export จากหน้า Shopping)" } : {}) });
+      status.links.push({ url, ok: src.kind !== "unknown", kind: src.kind, rows: src.rows, ...(src.month ? { month: src.month } : {}), ...(src.from ? { from: src.from, to: src.to } : {}), ...(src.metrics ? { metrics: src.metrics } : {}), ...(src.kind === "unknown" ? { error: isAdRevenueExport(tabs) ? "ไฟล์นี้เป็นรายได้โฆษณา (Watch Page ads/CPM) ไม่ใช่ Affiliate · ต้อง export จากหน้า Shopping" : "ไม่รู้จักรูปแบบไฟล์ (ต้องเป็น export จากหน้า Shopping)" } : {}) });
     } catch (e) {
       status.links.push({ url, ok: false, error: String(e instanceof Error ? e.message : e).slice(0, 160) });
     }

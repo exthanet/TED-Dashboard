@@ -87,8 +87,17 @@ const monthOf = (v: unknown) => {
 const tableTab = (tabs: SheetTabs) => Object.keys(tabs).find((t) => /table data/i.test(t)) || Object.keys(tabs)[0];
 const totalsTab = (tabs: SheetTabs) => Object.keys(tabs).find((t) => /^totals$/i.test(t.trim()));
 
+/** Columns of the YouTube ad revenue report (Analytics → Revenue), never of a Shopping export. */
+const AD_COLS = ["Watch Page ads (THB)", "Watch Page ads", "Estimated monetized playbacks", "Playback-based CPM (THB)", "Playback-based CPM", "YouTube Premium (THB)", "YouTube Premium"];
+/** An ad revenue export put in by mistake: its clips' revenue is ad money, not affiliate. */
+export function isAdRevenueExport(tabs: SheetTabs): boolean {
+  const first = tabs[tableTab(tabs)]?.[0] || {};
+  return AD_COLS.some((c) => c in first);
+}
+
 export function kindOf(tabs: SheetTabs): "period" | "content" | "product" | "unknown" {
   const first = tabs[tableTab(tabs)]?.[0] || {};
+  if (isAdRevenueExport(tabs)) return "unknown";
   if ("Product" in first || "Product title" in first) return "product";
   if ("Content" in first || "Video title" in first) return "content";
   if ("Date" in first && ("Orders" in first || "Earned revenue (THB)" in first)) return "period";
@@ -126,7 +135,9 @@ const productsOf = (rows: Row[]): AffProduct[] => {
         productId: str(r.Product),
         title,
         category: inferCategory(title),
-        commission: num(col(r, "Estimated revenue (THB)", "Estimated revenue")),
+        // Studio's product reports name the commission differently: the older one "Estimated revenue",
+        // the newer one "Earned revenue" (with "Total commission" before removals).
+        commission: num(col(r, "Estimated revenue (THB)", "Estimated revenue", "Earned revenue (THB)", "Earned revenue", "Total commission (THB)", "Total commission")),
         totalSales: num(col(r, "Total sales (THB)", "Total sales")),
         orders: num(r.Orders),
         ...("Product clicks" in r || clicksOnly ? { clicks: num(r["Product clicks"]) } : {}),
@@ -146,7 +157,7 @@ function combineProducts(have: AffProduct[] | undefined, next: AffProduct[], nex
     const h = by.get(p.productId);
     if (!h) by.set(p.productId, p);
     else if (nextIsClicks) Object.assign(h, { clicks: p.clicks, impressions: p.impressions });
-    else Object.assign(h, { commission: p.commission, totalSales: p.totalSales, orders: p.orders, title: p.title || h.title, category: p.category });
+    else Object.assign(h, { commission: p.commission, totalSales: p.totalSales, orders: p.orders, title: p.title || h.title, category: p.category }, p.clicks !== undefined ? { clicks: p.clicks, impressions: p.impressions } : {});
   }
   return [...by.values()];
 }
@@ -192,6 +203,11 @@ export function readAffiliateSheets(workbooks: SheetTabs[]): AffiliateSheets {
     const kind = kindOf(tabs);
     const rows = (tabs[tableTab(tabs)] || []).filter((r) => !isSummary(Object.values(r)[0]));
     const totals = totalsTab(tabs) ? tabs[totalsTab(tabs)!].filter((r) => !isSummary(r.Date)) : [];
+    // Not a Shopping export (e.g. the ad revenue report): listed, nothing read from it, not even its Totals.
+    if (kind === "unknown") {
+      out.sources.push({ kind, tabs: Object.keys(tabs), rows: rows.length });
+      continue;
+    }
     if (kind === "period") {
       out.sources.push({ kind, tabs: Object.keys(tabs), rows: rows.length });
       out.monthly = rows
@@ -379,7 +395,12 @@ function mergeProductMonths(current: AffiliateSheets, draft: AffiliateSheets): R
     const kinds = draft.sources.filter((s) => s.kind === "product" && s.month === m).map((s) => s.metrics || "revenue");
     const have = out[m];
     if (!have?.length || (kinds.includes("revenue") && kinds.includes("clicks"))) out[m] = list;
-    else out[m] = combineProducts(have, list, !kinds.includes("revenue"));
+    else if (kinds.includes("revenue")) {
+      // A revenue report replaces the month's products (never a mix of two reports' top 500);
+      // clicks already stored stay on the products that still have none.
+      const clicks = new Map(have.filter((p) => p.clicks !== undefined).map((p) => [p.productId, p]));
+      out[m] = list.map((p) => (p.clicks === undefined && clicks.has(p.productId) ? { ...p, clicks: clicks.get(p.productId)!.clicks, impressions: clicks.get(p.productId)!.impressions } : p));
+    } else out[m] = combineProducts(have, list, true);
   }
   return out;
 }

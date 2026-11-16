@@ -142,3 +142,39 @@ test("a clicks report of products adds clicks and never zeroes the revenue or th
   assert.deepEqual(kept.productsByMonth["2026-09"].map((p) => [p.commission, p.clicks]), [[10, 40]]);
   assert.deepEqual(kept.daily.map((d) => d.revenue), [5, 5]);
 });
+
+test("the ad revenue report is refused and adds nothing, not even its daily totals", async () => {
+  const { isAdRevenueExport } = await import("../lib/dashboard/affiliateSheets.ts");
+  const ads = {
+    "Table data": [{ Content: "v1", "Video title": "x", "Estimated revenue (THB)": 900, "Watch Page ads (THB)": 800, "Playback-based CPM (THB)": 40 }],
+    Totals: [{ Date: "2026-10-01", "Estimated revenue (THB)": 900 }],
+  };
+  assert.equal(isAdRevenueExport(ads), true);
+  assert.equal(kindOf(ads), "unknown");
+  const out = readAffiliateSheets([ads]);
+  assert.deepEqual(out.contentsByMonth, {});
+  assert.deepEqual(out.daily, []);
+  assert.equal(out.sources[0].kind, "unknown");
+});
+
+test("the newer product report: commission from Earned revenue, then Total commission", () => {
+  const days = Array.from({ length: 31 }, (_, i) => ({ Date: `2026-10-${String(i + 1).padStart(2, "0")}`, "Total sales (THB)": 1 }));
+  const earned = { "Table data": [{ Product: "p1", "Product title": "a", "Earned revenue (THB)": 12, "Total commission (THB)": 15, "Total sales (THB)": 100, Orders: 2, "Product clicks": 9 }], Totals: days };
+  const out = readAffiliateSheets([earned]);
+  assert.equal(out.productsByMonth["2026-10"][0].commission, 12);
+  assert.equal(out.productsByMonth["2026-10"][0].clicks, 9);
+  // Its Totals tab is sales, not revenue: the daily revenue is left alone.
+  assert.deepEqual(out.daily, []);
+  const total = { "Table data": [{ Product: "p1", "Product title": "a", "Total commission (THB)": 15, Orders: 2 }], Totals: days };
+  assert.equal(readAffiliateSheets([total]).productsByMonth["2026-10"][0].commission, 15);
+});
+
+test("a new revenue report replaces the month's products instead of mixing two top-500 lists", async () => {
+  const { mergeAffiliate } = await import("../lib/dashboard/affiliateSheets.ts");
+  const days = [{ Date: "2026-10-01", "Estimated revenue (THB)": 1 }, { Date: "2026-10-31", "Estimated revenue (THB)": 1 }];
+  const old = { "Table data": [{ Product: "a", "Estimated revenue (THB)": 5, Orders: 1 }, { Product: "b", "Estimated revenue (THB)": 3, Orders: 1 }], Totals: days };
+  const clicks = { "Table data": [{ Product: "a", "Product clicks": 7, "Product impressions": 70 }], Totals: days.map((d) => ({ Date: d.Date, "Product clicks": 1 })) };
+  const next = { "Table data": [{ Product: "a", "Earned revenue (THB)": 6, Orders: 2 }, { Product: "c", "Earned revenue (THB)": 1, Orders: 1 }], Totals: days };
+  const merged = mergeAffiliate(readAffiliateSheets([old, clicks]), readAffiliateSheets([next]));
+  assert.deepEqual(merged.productsByMonth["2026-10"].map((p) => [p.productId, p.commission, p.clicks]), [["a", 6, 7], ["c", 1, undefined]]);
+});

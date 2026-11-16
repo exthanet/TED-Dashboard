@@ -84,7 +84,7 @@ export function AffiliateSheetSettings({ onSaved }: { onSaved?: () => void }) {
     setBusy(true);
     setMsg(null);
     try {
-      const [draft, current] = await Promise.all([loadAffiliateSheets("affiliateSheetsDraft"), loadAffiliateSheets()]);
+      const [draft, current] = await Promise.all([loadAffiliateSheets("affiliateSheetsDraft"), loadAffiliateSheets("affiliateSheets", true)]);
       if (!draft) return setMsg({ ok: false, text: "ยังไม่มีข้อมูลจาก Sheet · กด \"ดึงจาก Sheet ตอนนี้\" ก่อน" });
       // Merge: the links' months replace those months; every other stored month stays.
       const merged = mergeAffiliate(current, draft);
@@ -143,7 +143,7 @@ export function AffiliateSheetSettings({ onSaved }: { onSaved?: () => void }) {
     setBusy(true);
     setMsg(null);
     try {
-      await saveAffiliateSheets(withoutMonth(stored, m));
+      await saveAffiliateSheets(withoutMonth(stored, m), [m]);
       setMsg({ ok: true, text: `ลบข้อมูลของ ${thMonth(m)} แล้ว` });
       loadStored();
       onSaved?.();
