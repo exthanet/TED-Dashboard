@@ -376,6 +376,102 @@ if (summary) {
 }
 
 sheet.getCell("A51").value = `Revenue source จาก YouTube Studio (${files.filter(parseZipName).length} ไฟล์) · สร้างด้วย scripts/acc-revenue-sources.mjs เมื่อ ${new Date().toLocaleString("th-TH", { timeZone: "Asia/Bangkok" })}`;
+
+// "Update Report_<month>" tab: the Revenue source table (rows 53–76, D–Q) copied to the top as a
+// report of its own, laid out and coloured like the month sheet (one row higher): A–B channel,
+// C–M revenue by source, N the Studio Total, O W/T shared by N, P THB; total in row 30, the
+// AdSense box and the notes below. What is typed by hand stays on the month sheet: the cells
+// here point at it. The month sheet keeps its own copy of the table (rows 51–77).
+{
+  const name = `Update ${sheet.name}`.slice(0, 31);
+  const old = wb.getWorksheet(name);
+  if (old) wb.removeWorksheet(old.id);
+  const up = wb.addWorksheet(name, { views: [{ zoomScale: 90 }] });
+  const ref = (a) => `'${sheet.name}'!${a}`;
+  // The month sheet's "type this in" yellow (mark) is not carried over: nothing is typed here.
+  const copy = (from, to, value = from.value) => {
+    const typed = from.fill?.fgColor?.argb === "FFFFF2A8";
+    to.style = { ...from.style, ...(typed ? { fill: { type: "pattern", pattern: "none" } } : {}) };
+    to.value = value;
+  };
+  const PINK = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF2DCDB" } };
+  const RED = { ...(sheet.getCell("A6").font || {}), bold: true, color: { argb: "FFFF0000" } };
+  const n = SOURCE_COLUMNS.length; // C … (C + n − 1), then N, O, P
+  const cTotal = 3 + n, cWt = cTotal + 1, cThb = cTotal + 2;
+  const L = (c) => String.fromCharCode(64 + c);
+  // Title and the month, styled as on the month sheet.
+  for (let r = 1; r <= 4; r++) up.getRow(r).height = sheet.getRow(r).height;
+  copy(sheet.getCell("A2"), up.getCell("A2"), text(sheet.getCell("A2").value));
+  up.mergeCells(`A2:${L(cThb)}2`);
+  copy(sheet.getCell("N4"), up.getCell("A4"), text(sheet.getCell("N4").value));
+  up.mergeCells(`A4:${L(cThb)}4`);
+  up.getCell("A4").alignment = { horizontal: "center" };
+  // Headings (row 5).
+  up.getRow(5).height = sheet.getRow(6).height;
+  const heads = ["Channel Display Name", "Asset Channel ID", ...SOURCE_COLUMNS, "Total ตามไฟล์ Studio (USD)", "Deduct W/T (USD)", "THB"];
+  heads.forEach((h, i) => {
+    const cell = up.getCell(5, 1 + i);
+    copy(sheet.getCell("A6"), cell, h);
+    if (1 + i >= cWt) cell.style = { ...cell.style, fill: PINK, font: RED };
+  });
+  // Channels (rows 6–29) = rows 53–76 here; the colour of the same channel's line on the month sheet.
+  const first = 53, last = 76;
+  for (let r = first; r <= last; r++) {
+    const to = r - 47;
+    const line = sheet.getRow(r - 46); // the month sheet: same channel
+    up.getRow(to).height = line.height;
+    copy(line.getCell(1), up.getCell(to, 1), text(sheet.getCell(r, 4).value));
+    copy(line.getCell(2), up.getCell(to, 2), text(sheet.getCell(r, 5).value));
+    for (let i = 0; i <= n; i++) {
+      const v = sheet.getCell(r, 6 + i).value;
+      copy(line.getCell(11), up.getCell(to, 3 + i), v && typeof v === "object" ? null : v);
+    }
+    copy(line.getCell(14), up.getCell(to, cWt), { formula: `${L(cTotal)}${to}*($B$42/${L(cTotal)}$30)` });
+    // W/T (B42) is typed as a negative number, so O is too: THB = (Total + O) × rate, and the
+    // column adds up to B43 × B40 like the notes below.
+    copy(line.getCell(17), up.getCell(to, cThb), { formula: `(${L(cTotal)}${to}+${L(cWt)}${to})*$B$40` });
+    for (const c of [cWt, cThb]) up.getCell(to, c).style = { ...up.getCell(to, c).style, fill: PINK };
+  }
+  // Total (row 30), styled like the month sheet's row 31.
+  up.getRow(30).height = sheet.getRow(31).height;
+  for (let c = 1; c <= cThb; c++) {
+    const src = sheet.getCell(31, c <= 2 ? c : c >= cWt ? (c === cWt ? 14 : 17) : 11);
+    copy(src, up.getCell(30, c), c <= 2 ? "รวม" : { formula: `SUM(${L(c)}6:${L(c)}29)` });
+  }
+  up.mergeCells("A30:B30");
+  // AdSense box and notes (rows 34–49): labels and styles of the month sheet; typed numbers
+  // point at the month sheet, so they are typed once.
+  for (let r = 34; r <= 49; r++) {
+    up.getRow(r).height = sheet.getRow(r).height;
+    copy(sheet.getCell(r, 1), up.getCell(r, 1));
+    const v = sheet.getCell(r, 2).value;
+    copy(sheet.getCell(r, 2), up.getCell(r, 2), typeof v === "string" ? v : null);
+  }
+  const b = (a, value) => (up.getCell(a).value = value);
+  b("B35", { formula: ref("B35") });
+  b("B36", { formula: ref("B36") });
+  b("B37", { formula: "SUM(B35:B36)" });
+  up.getCell("A40").style = { ...up.getCell("A41").style, fill: PINK, font: { ...(up.getCell("A41").font || {}), color: { argb: "FFFF0000" } } };
+  b("A40", "Exchange Rate");
+  up.getCell("B40").style = { ...sheet.getCell("M5").style, fill: PINK };
+  b("B40", { formula: ref("M5") });
+  b("B41", { formula: `${L(cTotal)}30` });
+  b("B42", { formula: ref("B42") });
+  b("B43", { formula: "SUM(B41:B42)" });
+  b("B44", { formula: ref("B44") });
+  b("B45", { formula: "SUM(B43:B44)" });
+  b("B47", { formula: "B45*B40" });
+  b("B48", { formula: ref("B48") });
+  b("B49", { formula: "SUM(B47:B48)" });
+  // Yellow as in the example: these are the month's typed numbers (typed on the month sheet).
+  for (const a of ["B35", "B36", "B42", "B44", "B48"]) up.getCell(a).style = { ...up.getCell(a).style, fill: { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFF2CC" } } };
+  for (const a of ["A42", "A44", "A48"]) up.getCell(a).font = { ...(up.getCell(a).font || {}), color: { argb: "FFFF0000" } };
+  // Widths: A–B as on the month sheet, the numbers a little wider for their headings.
+  up.getColumn(1).width = sheet.getColumn(1).width;
+  up.getColumn(2).width = sheet.getColumn(2).width;
+  for (let c = 3; c <= cThb; c++) up.getColumn(c).width = c === cTotal ? 18 : 15;
+  report.push(`แท็บ "${name}": ตาราง Revenue source (แถว 53–76) แบบรายงาน · ช่องที่กรอกเอง (อัตราแลกเปลี่ยน, W/T, AdSense, ค่าธรรมเนียม) ดึงจากแท็บ ${sheet.name}`);
+}
 // Formulas keep only themselves: the saved results are the template's (or the old
 // inputs'), and a viewer that does not recalculate would show them as this month's.
 wb.eachSheet((ws) =>
@@ -389,7 +485,8 @@ wb.eachSheet((ws) =>
   ),
 );
 wb.calcProperties.fullCalcOnLoad = true;
-const out = path.join(dir, book.replace(/\.xlsx$/i, " (generated).xlsx"));
+// ACC_OUT: write somewhere else (a trial run while the month's file is open in Excel).
+const out = process.env.ACC_OUT || path.join(dir, book.replace(/\.xlsx$/i, " (generated).xlsx"));
 await wb.xlsx.writeFile(out);
 console.log(report.join("\n"));
 console.log(`\nใส่ข้อมูล ${filled.size} ช่อง · ไม่มีไฟล์ ${rows.length - filled.size} ช่อง (ใส่ "-")\nบันทึกที่: ${out}`);
