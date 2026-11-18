@@ -2593,3 +2593,166 @@
 .unassigned-clips .tv-add {
   margin-top: 8px;
 }
+
+/* Monthly ACC → รายงาน Revenue source (RevenueSourceReportPanel, admins). */
+.acc-export-wrap {
+  display: flex;
+  gap: 8px;
+}
+
+.acc-export.acc-export-rs {
+  background: #2563eb;
+}
+
+.acc-export.acc-export-rs:hover {
+  background: #1d4ed8;
+}
+
+.acc-rs {
+  margin: 8px 0 14px;
+  padding: 14px 16px;
+  border: 1px solid #dbe5f4;
+  border-radius: 12px;
+  background: #f8fbff;
+  font-size: 13px;
+}
+
+.acc-rs-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.acc-rs-head strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+}
+
+.acc-rs-close {
+  border: 0;
+  background: none;
+  color: #64748b;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.acc-rs-sub {
+  margin: 2px 0 10px;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.acc-rs-steps {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding-left: 20px;
+}
+
+.acc-rs-steps > li > b {
+  display: inline-block;
+  margin-bottom: 4px;
+}
+
+.acc-rs-steps ul {
+  display: grid;
+  gap: 4px;
+  margin: 2px 0 0;
+  padding-left: 16px;
+}
+
+.acc-rs-steps small {
+  color: #64748b;
+}
+
+.acc-rs-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 4px 0;
+}
+
+.acc-rs-folder {
+  color: #334155;
+  font-size: 12px;
+}
+
+.acc-rs-link {
+  border: 0;
+  background: none;
+  color: #2563eb;
+  font: inherit;
+  font-size: 12px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.acc-rs-check {
+  list-style: none;
+  padding-left: 0 !important;
+}
+
+.acc-rs-check > li {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 5px 8px;
+  border-radius: 8px;
+}
+
+.acc-rs-check > li > svg {
+  flex: none;
+  margin-top: 2px;
+}
+
+.acc-rs-check > li.ok > svg {
+  color: #16a34a;
+}
+
+.acc-rs-check > li.warn {
+  background: #fffbeb;
+}
+
+.acc-rs-check > li.warn > svg {
+  color: #d97706;
+}
+
+.acc-rs-check > li.error {
+  background: #fef2f2;
+}
+
+.acc-rs-check > li.error > svg {
+  color: #dc2626;
+}
+
+.acc-rs-check ul {
+  color: #475569;
+  font-size: 12px;
+}
+
+.acc-rs-good {
+  color: #15803d;
+  font-weight: 700;
+}
+
+.acc-rs-bad {
+  color: #b91c1c;
+  font-weight: 700;
+}
+
+.acc-rs-done details {
+  margin-top: 4px;
+  color: #475569;
+  font-size: 12px;
+}
+
+@media (max-width: 640px) {
+  .acc-export-wrap {
+    flex-wrap: wrap;
+    margin-left: 0;
+  }
+}

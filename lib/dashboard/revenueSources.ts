@@ -83,6 +83,24 @@ export function parseCmsChannels(text: string): Map<string, string> {
 
 const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9฀-๿]/g, "");
 
+/**
+ * The workbook's channel name → the channel's name in YouTube Studio (the zip's name), where
+ * they differ: matching by name works without the CMS channel export.
+ */
+const STUDIO_NAMES: Record<string, string[]> = Object.fromEntries(
+  Object.entries({
+    TeroRadioChannel: ["HITZ Thailand"],
+    "ครอบครัวข่าวเด็ก (Kids Fun)": ["Kids Fun คิดฝัน"],
+    "TV Series": ["TERO TV Series"],
+    Variety: ["TERO Variety"],
+    Sports: ["TERO Sport", "TERO Sports"],
+    "นครหลวงโปรโมชัน (NAKORNLOUNG Promotion)": ["นครหลวงโปรโมชั่น"],
+    "Krajokhokdan (กระจกหกด้าน)": ["กระจกหกด้าน _ Krajokhokdan Official", "กระจกหกด้าน | Krajokhokdan Official"],
+    Liamjone: ["Liamjone BEC-TERO"],
+    คิดเช่นเห็นต่าง: ["คิดเช่นเห็นต่าง CH3"],
+  }).map(([k, v]) => [norm(k), v]),
+);
+
 export interface SheetRow {
   row: number;
   name: string;
@@ -101,7 +119,7 @@ export function matchRow(channel: string, rows: SheetRow[], cms: Map<string, str
     if (byId) return { row: byId, by: "id" };
   }
   const n = norm(channel);
-  const byName = rows.filter((r) => norm(r.name) === n);
+  const byName = rows.filter((r) => norm(r.name) === n || (STUDIO_NAMES[norm(r.name)] || []).some((a) => norm(a) === n));
   return byName.length === 1 ? { row: byName[0], by: "name" } : null;
 }
 

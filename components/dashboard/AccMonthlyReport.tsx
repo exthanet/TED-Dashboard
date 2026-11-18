@@ -2,7 +2,9 @@
 // รายได้ → Monthly ACC: views and revenue per YouTube channel for one month, in
 // the CMS "Channel summary" columns, with an Excel export. Admins only.
 import { useEffect, useMemo, useState } from "react";
-import { Download, FileSpreadsheet } from "lucide-react";
+import { Download, FileDown, FileSpreadsheet } from "lucide-react";
+import { useAdmin } from "@/components/dashboard/shared/AdminContext";
+import { RevenueSourceReportPanel } from "@/components/dashboard/RevenueSourceReportPanel";
 import { num } from "@/lib/dashboard/format";
 import { track } from "@/lib/loadingBar";
 import { loadAccMonths } from "@/lib/accMonthlyData";
@@ -24,6 +26,8 @@ export function AccMonthlyReport({ canDownload = true }: { canDownload?: boolean
   // Months ticked for the export; empty = the month on screen.
   const [exportMonths, setExportMonths] = useState<string[]>([]);
   const [exportOpen, setExportOpen] = useState(false);
+  const { isAdmin } = useAdmin();
+  const [rsOpen, setRsOpen] = useState(false);
 
   useEffect(() => {
     track(
@@ -146,6 +150,11 @@ export function AccMonthlyReport({ canDownload = true }: { canDownload?: boolean
             </div>
             {canDownload && (
             <div className="acc-export-wrap">
+              {isAdmin && (
+                <button type="button" className="acc-export acc-export-rs" onClick={() => { setRsOpen((o) => !o); setExportOpen(false); }} aria-expanded={rsOpen} title="สร้างไฟล์ Report Earning จาก Revenue source ของ YouTube Studio (admin)">
+                  <FileDown size={15} /> รายงาน Revenue source
+                </button>
+              )}
               <button type="button" className="acc-export" onClick={() => setExportOpen((o) => !o)} aria-expanded={exportOpen}>
                 <Download size={15} /> Export Excel
               </button>
@@ -175,6 +184,7 @@ export function AccMonthlyReport({ canDownload = true }: { canDownload?: boolean
             </div>
             )}
           </div>
+          {isAdmin && rsOpen && <RevenueSourceReportPanel month={month} onClose={() => setRsOpen(false)} />}
           {running && <p className="acc-note">เดือนนี้ยังไม่จบ ตัวเลขถึงวันที่ {thDay(month.through)} และจะอัปเดตทุกวัน</p>}
           {!running && <p className="acc-note">ข้อมูลครบเดือน (ถึง {thDay(month.through)}) · YouTube อาจปรับรายได้ย้อนหลังได้ราว 2 สัปดาห์ ระบบจึงอัปเดตเดือนก่อนให้ด้วย</p>}
 
