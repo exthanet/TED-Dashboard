@@ -141,7 +141,7 @@ export function KpiSummary({
           icon={<Tv />}
           label="ผู้ชม TV"
           value={compact(metrics.tvAudience)}
-          detail={`${num(metrics.tvEpisodes)} ตอน · One31 ${num(metrics.one31Episodes)} · GMM25 ${num(metrics.gmm25Episodes)} · เฉลี่ย ${compact(metrics.tvAudienceAvg)} คน/ตอน`}
+          detail={`รวม 2 ช่อง (One31 + GMM25) · ${num(metrics.tvBroadcastDays)} วันออกอากาศ · เฉลี่ย ${num(Math.round(metrics.tvAudiencePerDay))} คน/วันออกอากาศ`}
         />
         <Kpi
           tone="plain"

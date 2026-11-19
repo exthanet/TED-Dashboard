@@ -17,14 +17,19 @@ export function Kpi({
   /** The same number for every program, while the รายการ filter picks some. */
   all?: React.ReactNode;
 }) {
+  const hasAll = all !== undefined && all !== null;
   return (
     <article className={`kpi-card ${tone}`}>
       <div className="kpi-icon">{icon}</div>
       <div>
         <p>{label}</p>
-        {all !== undefined && all !== null && <span className="kpi-all">ทุกรายการ <b>{all}</b></span>}
         <strong>{value}</strong>
-        {growth && <div className="kpi-growth-row">{growth}</div>}
+        {(growth || hasAll) && (
+          <div className="kpi-growth-row">
+            {growth}
+            {hasAll && <span className="kpi-all">ทุกรายการ <b>{all}</b></span>}
+          </div>
+        )}
         <small>{detail}</small>
       </div>
     </article>

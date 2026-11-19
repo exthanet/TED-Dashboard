@@ -479,6 +479,8 @@ export function useDashboard(enabled = true) {
       tvAudience,
       tvEpisodes,
       tvAudienceAvg: tvEpisodes ? tvAudience / tvEpisodes : 0,
+      // One31 + GMM25 of the same day together, per day on air (what the TV card reads).
+      tvAudiencePerDay: tvBroadcastDays ? tvAudience / tvBroadcastDays : 0,
       engagementRate: views ? rateEngagement / views : 0,
       avgDaily: views / days,
     };
