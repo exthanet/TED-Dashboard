@@ -1,6 +1,6 @@
 "use client";
 import { dashboardAsset, isStaticHost } from "@/lib/dashboard/hosting";
-import { programMatches } from "@/lib/dashboard/programFilter";
+import { programList, programMatches } from "@/lib/dashboard/programFilter";
 import { autoGrain, tvAudienceTrend, tvEpisodes as episodesOf } from "@/lib/dashboard/tvTrend";
 import {
   loadMasterDataFromFirebase,
@@ -483,6 +483,37 @@ export function useDashboard(enabled = true) {
       avgDaily: views / days,
     };
   }, [performanceFiltered, filtered, digitalFiltered, tvMode]);
+  // The same cards for every program (all other filters kept): shown on top of each card
+  // while the รายการ filter picks some programs. null when every program is already shown.
+  const allProgramsMetrics = useMemo(() => {
+    if (programList(program) === null) return null;
+    const all = rows.filter(
+      (r) =>
+        (platform === "ALL" || r.platform === platform) &&
+        (vdoType === "ALL" || r.vdoType === vdoType) &&
+        (topicType === "ALL" || r.topicType === topicType) &&
+        (!startDate || r.date >= startDate) &&
+        (!endDate || r.date <= endDate) &&
+        matchesSearch(r, terms),
+    );
+    const isTv = (r: RecordRow) => r.platform === "TV" || r.ratingTotal > 0 || r.gmmRating > 0;
+    const digital = all.filter((r) => r.platform !== "TV");
+    const tvRows = all.filter(isTv);
+    const perf = tvMode ? all.filter((r) => r.platform === "TV") : digital;
+    const value = (r: RecordRow) => (tvMode ? r.audienceTotal + r.gmmAudience : r.views);
+    const sum = (l: RecordRow[], f: (r: RecordRow) => number) => l.reduce((a, r) => a + f(r), 0);
+    const digitalViews = sum(digital, (r) => r.views);
+    const tvAudience = sum(tvRows, (r) => r.audienceTotal + r.gmmAudience);
+    const views = sum(perf, value);
+    return {
+      totalCombinedViews: digitalViews + tvAudience,
+      views,
+      tvAudience,
+      engagement: sum(perf, (r) => r.engagement),
+      engagementRate: views ? sum(perf.filter((r) => value(r) > 0), (r) => r.engagement) / views : 0,
+      uploads: sum(perf, (r) => r.uploadCount),
+    };
+  }, [rows, program, platform, vdoType, topicType, startDate, endDate, terms, tvMode]);
   const chartGrain = useMemo<"day" | "month" | "year">(
     () =>
       tvMode
@@ -1398,6 +1429,7 @@ export function useDashboard(enabled = true) {
     performanceFiltered,
     performanceValue,
     metrics,
+    allProgramsMetrics,
     chartGrain,
     daily,
     types,

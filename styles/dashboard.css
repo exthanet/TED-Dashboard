@@ -1383,3 +1383,19 @@ footer {
   color: #0f172a;
   text-decoration: none;
 }
+
+/* Overview cards: the same number for every program while the รายการ filter picks some. */
+.kpi-card .kpi-all {
+  display: inline-block;
+  margin: -2px 0 6px 22px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #4338ca;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.kpi-card .kpi-all b {
+  font-weight: 800;
+}

@@ -19,6 +19,7 @@ export function KpiSummary({
   tvMode,
   performanceFiltered,
   metrics,
+  allProgramsMetrics,
   types,
   growth,
   comparePeriod,
@@ -34,6 +35,7 @@ export function KpiSummary({
   | "tvMode"
   | "performanceFiltered"
   | "metrics"
+  | "allProgramsMetrics"
   | "types"
   | "growth"
   | "comparePeriod"
@@ -49,6 +51,7 @@ export function KpiSummary({
   const rangeText = comparePeriod
     ? `${shortDate(comparePeriod.start, comparePeriod.start.slice(0, 4) !== comparePeriod.end.slice(0, 4))} – ${shortDate(comparePeriod.end, true)}`
     : "";
+  const all = allProgramsMetrics;
   const compareText = comparePeriod ? `เทียบกับ${modeLabel} ${rangeText}` : "";
   // Only render a badge when there is a previous value to compare with.
   const badge = (value: number | null | undefined, label?: string) =>
@@ -96,6 +99,7 @@ export function KpiSummary({
         <Kpi
           growth={badge(growth?.totalCombinedViews)}
           tone="lead"
+          all={all && compact(all.totalCombinedViews)}
           icon={<Globe2 />}
           label="ยอดวิวรวม TV + Digital"
           value={compact(metrics.totalCombinedViews)}
@@ -111,6 +115,7 @@ export function KpiSummary({
         <Kpi
           growth={badge(growth?.views)}
           tone="plain"
+          all={all && compact(all.views)}
           icon={<Activity />}
           label={tvMode ? "TV Audience ตามช่วงเวลา" : "ยอดวิว Digital"}
           value={compact(metrics.views)}
@@ -132,6 +137,7 @@ export function KpiSummary({
         <Kpi
           growth={badge(growth?.tvAudience)}
           tone="plain"
+          all={all && compact(all.tvAudience)}
           icon={<Tv />}
           label="ผู้ชม TV"
           value={compact(metrics.tvAudience)}
@@ -168,6 +174,7 @@ export function KpiSummary({
         <Kpi
           growth={badge(growth?.engagement)}
           tone="plain"
+          all={all && compact(all.engagement)}
           icon={<Heart />}
           label="Engagement"
           value={compact(metrics.engagement)}
@@ -180,6 +187,7 @@ export function KpiSummary({
         <Kpi
           growth={badge(growth?.engagementRate)}
           tone="plain"
+          all={all && pct(all.engagementRate)}
           icon={<Sparkles />}
           label="Engagement Rate"
           value={pct(metrics.engagementRate)}
@@ -187,6 +195,7 @@ export function KpiSummary({
         />
         <Kpi
           tone="plain"
+          all={all && num(all.uploads)}
           icon={<Upload />}
           label="โพสต์ทั้งหมด"
           value={num(metrics.uploads)}

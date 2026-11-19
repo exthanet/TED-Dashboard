@@ -365,6 +365,7 @@ export default function Dashboard() {
               tvMode={model.tvMode}
               performanceFiltered={model.performanceFiltered}
               metrics={model.metrics}
+              allProgramsMetrics={model.allProgramsMetrics}
               types={model.types}
               growth={model.growth}
               comparePeriod={model.comparePeriod}
