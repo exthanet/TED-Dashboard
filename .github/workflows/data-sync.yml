@@ -1,13 +1,20 @@
 name: Data sync (Metricool + YouTube)
 
-# Daily 05:17 Bangkok (off the hour: GitHub delays on-the-hour schedules).
+# Daily 05:17 Bangkok. GitHub starts schedules hours late, so the Dokploy server starts
+# this run on time (Run workflow with trigger=scheduler, see docs/SCHEDULER_TH.md); the
+# schedule below stays as a fallback and skips itself when that run already went.
 # Admins can also start it from the dashboard's
 # "สถานะการ Sync" → "รันตอนนี้" (Actions → Run workflow).
+run-name: ${{ inputs.trigger == 'scheduler' && 'Data sync (scheduler)' || github.workflow }}
 on:
   schedule:
     - cron: "17 22 * * *"
   workflow_dispatch:
     inputs:
+      trigger:
+        description: "scheduler = the daily run started by the Dokploy server (leave blank)"
+        required: false
+        default: ""
       mode:
         description: "write = update Firestore · test-run = check only · test-email = send a test email · test-alert = send a test Telegram message · revenue-sheet = read the revenue and affiliate Google Sheets for Import (no sync)"
         type: choice
@@ -20,13 +27,35 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: data-sync
   cancel-in-progress: false
 
 jobs:
+  # The late GitHub schedule runs only when the Dokploy server's run of the last 20 hours
+  # did not go (none, or it failed). Every other start always runs.
+  gate:
+    runs-on: ubuntu-latest
+    outputs:
+      run: ${{ steps.check.outputs.run }}
+    steps:
+      - id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          if [ "$EVENT" != "schedule" ]; then echo "run=true" >> "$GITHUB_OUTPUT"; exit 0; fi
+          since=$(date -u -d "20 hours ago" +%FT%TZ)
+          done=$(gh api "repos/${{ github.repository }}/actions/workflows/data-sync.yml/runs?event=workflow_dispatch&created=>=$since" \
+            --jq '[.workflow_runs[] | select(.display_title == "Data sync (scheduler)" and (.conclusion == "success" or .status != "completed"))] | length' || echo 0)
+          echo "scheduler runs since $since: $done"
+          if [ "$done" -gt 0 ]; then echo "run=false" >> "$GITHUB_OUTPUT"; else echo "run=true" >> "$GITHUB_OUTPUT"; fi
+
   sync:
+    needs: gate
+    if: needs.gate.outputs.run == 'true'
     runs-on: ubuntu-latest
     # A normal run takes 15–30 min; each step's time is on the run report (syncRuns → timings).
     timeout-minutes: 45
