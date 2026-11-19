@@ -37,13 +37,13 @@ test("a tab is read by header names: episodes, pending, cancelled, competitors",
   assert.deepEqual(p.competitors.map((c) => `${c.competitorChannel}|${c.program}|${c.slot}|${c.rating}`), ["ช่อง 3|ละครเย็น||0.759", "|โหนกระแส|12.35 - 13.30 น.|1.2"]);
 });
 
-test("audience is rating × 700,000; One31 total uses Viewership when filled", () => {
+test("audience is rating × 700,000 on both channels; Viewership is not used", () => {
   const base = { date: "2026-01-05", program: "ถกไม่เถียง", topic: "", topicType: "", durationMin: 42, rating: 0.168, bkk: 0.188, urban: 0.178, bkkUrban: 0.182, rural: 0.094, viewers: 0 };
   const gmm = episodeNumbers({ ...base, channel: "GMM25" });
   assert.equal(gmm.TV_Audience_Total, 117600);
   assert.equal(gmm["TV_Audience_15+BKK"], 131600);
   assert.equal(gmm["TV_Audience_15+RURAL"], 65800);
-  assert.equal(episodeNumbers({ ...base, channel: "One31", viewers: 622252 }).TV_Audience_Total, 622252);
+  assert.equal(episodeNumbers({ ...base, channel: "One31", viewers: 622252 }).TV_Audience_Total, 117600);
   assert.equal(episodeNumbers({ ...base, channel: "One31" }).TV_Audience_Total, 117600);
 });
 

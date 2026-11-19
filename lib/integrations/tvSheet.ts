@@ -4,9 +4,8 @@
 // Ownership: the workbook owns the TV_Rating_* and TV_Audience_* numbers of
 // each episode. Everything else on existing rows (topic, labels, notes) stays
 // as the team wrote it; new episodes are added with the workbook's topic.
-// Audience is not in the workbook: rating × 700,000 people per rating point,
-// except One31's total, which uses the "Viewership (15+)" column when filled
-// (the same rules the existing data follows).
+// Audience is not taken from the workbook: rating × 700,000 people per rating point,
+// for both channels and every zone ("Viewership (15+)" is not used, 2026-11-19).
 import { sourceDay } from "../dashboard/normalize.ts";
 
 type Row = Record<string, unknown>;
@@ -306,7 +305,9 @@ const round = (n: number) => Math.round(n);
 
 /** The owned numbers of one episode, as masterData stores them. */
 export function episodeNumbers(e: TvEpisode): Record<string, number> {
-  const total = e.channel === "One31" && e.viewers > 0 ? round(e.viewers) : round(e.rating * AUDIENCE_PER_POINT);
+  // Both channels: rating × 700,000 people per point (the "Viewership" column is read but not
+  // used, so One31 and GMM25 audiences are on the same base).
+  const total = round(e.rating * AUDIENCE_PER_POINT);
   return {
     TV_Rating_Total: e.rating,
     "TV_Rating_15+BKK": e.bkk,

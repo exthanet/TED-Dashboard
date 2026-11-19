@@ -95,7 +95,7 @@ export function TvSourcesModal({
         </div>
 
         <p className="sync-muted tv-note">
-          ระบบอ่าน rating รวมและ 4 เขต แล้วคำนวณ Audience = rating × 700,000 (One31 รวมใช้ Viewership ในไฟล์ถ้ามี) · คอลัมน์อื่นที่ทีมกรอกไม่ถูกแก้ ·
+          ระบบอ่าน rating รวมและ 4 เขต แล้วคำนวณ Audience = rating × 700,000 ทั้ง 2 ช่อง · คอลัมน์อื่นที่ทีมกรอกไม่ถูกแก้ ·
           ไฟล์ต้องอยู่ใน SharePoint ที่ผู้ดูแล Microsoft 365 ให้สิทธิ์แอป sync แล้ว
         </p>
 
