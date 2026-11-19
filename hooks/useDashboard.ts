@@ -816,8 +816,13 @@ export function useDashboard(enabled = true) {
     return {
       count: compareSorted.length,
       tvCount: compareSorted.filter((r) => r.hasTv).length,
+      // Ratings: the average per episode (what a rating means), and the plain sum for reference.
       one: avg(compareSorted.filter((r) => r.one > 0).map((r) => r.one)),
       gmm: avg(compareSorted.filter((r) => r.gmm > 0).map((r) => r.gmm)),
+      oneSum: compareSorted.reduce((a, r) => a + (r.one > 0 ? r.one : 0), 0),
+      gmmSum: compareSorted.reduce((a, r) => a + (r.gmm > 0 ? r.gmm : 0), 0),
+      oneCount: compareSorted.filter((r) => r.one > 0).length,
+      gmmCount: compareSorted.filter((r) => r.gmm > 0).length,
       tvAudience: sum("tvAudience"),
       youtube: sum("youtube"),
       facebook: sum("facebook"),

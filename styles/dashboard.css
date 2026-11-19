@@ -875,6 +875,8 @@ footer {
 .ep-table td.ep-online-total { font-weight: 700; color: #0f766e; }
 .ep-table td.ep-total { background: #faf5ff; }
 .ep-table td.ep-total b { color: #6d28d9; font-size: 11px; }
+.ep-table td.ep-rating-total { white-space: nowrap; }
+.ep-table td.ep-tv small.ep-rating-sum { margin-top: 2px; padding-top: 2px; border-top: 1px dashed #cbd5e1; color: #94a3b8; }
 .ep-table td.ep-date { white-space: nowrap; color: #475569; }
 .ep-topic-text {
   display: -webkit-box;

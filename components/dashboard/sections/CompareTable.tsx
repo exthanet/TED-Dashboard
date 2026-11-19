@@ -272,9 +272,15 @@ export function CompareTable({
               <tfoot>
                 <tr>
                   <td colSpan={2}>รวมทั้งหมดที่กรอง ({num(t.count)} รายการ)</td>
-                  <td className="num ep-tv" title="เฉลี่ย One31 / GMM25">
-                    <b>{t.one ? t.one.toFixed(3) : "–"}</b>
-                    <small>GMM {t.gmm ? t.gmm.toFixed(3) : "–"}</small>
+                  <td
+                    className="num ep-tv ep-rating-total"
+                    title={`Rating เฉลี่ยต่อเทป = ผลรวม ÷ จำนวนเทปที่มี rating · One31 ${t.oneSum.toFixed(3)} ÷ ${t.oneCount} เทป · GMM25 ${t.gmmSum.toFixed(3)} ÷ ${t.gmmCount} เทป`}
+                  >
+                    <b>เฉลี่ย {t.one ? t.one.toFixed(3) : "–"}</b>
+                    <small>GMM เฉลี่ย {t.gmm ? t.gmm.toFixed(3) : "–"}</small>
+                    <small className="ep-rating-sum">
+                      รวม {t.oneSum ? t.oneSum.toFixed(3) : "–"} · GMM รวม {t.gmmSum ? t.gmmSum.toFixed(3) : "–"}
+                    </small>
                   </td>
                   <td className="num ep-tv"><Val v={t.tvAudience} /></td>
                   <td className="num"><Val v={t.youtube} /></td>
