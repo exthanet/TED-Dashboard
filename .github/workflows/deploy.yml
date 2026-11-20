@@ -67,7 +67,12 @@ jobs:
             echo "deployment $id: $status"
             case "$status" in
               done) exit 0 ;;
-              error|cancelled) echo "::error::Dokploy deployment $id ended with $status"; exit 1 ;;
+              error|cancelled)
+                echo "::error::Dokploy deployment $id ended with $status"
+                # What Dokploy says about it (no secrets: only these fields are printed).
+                api "$DOKPLOY_URL/api/deployment.all?applicationId=$APP_ID" \
+                  | jq --arg id "$id" '.[] | select(.deploymentId == $id) | {status, title, description, errorMessage, createdAt, startedAt, finishedAt}' || true
+                exit 1 ;;
             esac
           done
           echo "::error::Timed out waiting for Dokploy deployment"
