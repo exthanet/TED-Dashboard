@@ -89,6 +89,7 @@ export function CompareTable({
   compareRows,
   sortCompare,
   download,
+  downloadExcel,
   canDownload = true,
 }: { canDownload?: boolean } & Pick<
   DashboardModel,
@@ -106,6 +107,7 @@ export function CompareTable({
   | "compareRows"
   | "sortCompare"
   | "download"
+  | "downloadExcel"
 >) {
   // Episode rows opened to show their online posts (kept across pages and sorting).
   const [open, setOpen] = useState<Set<string>>(new Set());
@@ -164,10 +166,16 @@ export function CompareTable({
               ))}
             </div>
             {canDownload && (
-              <Button variant="outline" onClick={download}>
-                <Download />
-                Export CSV
-              </Button>
+              <>
+                <Button variant="outline" onClick={() => void downloadExcel()}>
+                  <Download />
+                  Export Excel
+                </Button>
+                <Button variant="outline" onClick={download}>
+                  <Download />
+                  Export CSV
+                </Button>
+              </>
             )}
           </div>
         </div>

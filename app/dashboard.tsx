@@ -463,6 +463,7 @@ export default function Dashboard() {
               compareRows={model.compareRows}
               sortCompare={model.sortCompare}
               download={model.download}
+              downloadExcel={model.downloadExcel}
             />
           </>
         )}

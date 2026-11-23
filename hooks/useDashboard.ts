@@ -1293,7 +1293,8 @@ export function useDashboard(enabled = true) {
     setStartDate(start);
     setEndDate(end);
   }
-  function download() {
+  /** The filtered rows as the per-episode export has them (CSV and Excel). */
+  function exportTable() {
     const h = [
         "Date",
         "Program",
@@ -1324,6 +1325,23 @@ export function useDashboard(enabled = true) {
         r.gmmRating || "",
         /^https?:\/\//.test(r.url || "") ? r.url : "",
       ]);
+    return { h, body };
+  }
+  /** Excel: the same table, numbers as numbers, column widths and a filter row. */
+  async function downloadExcel() {
+    const { h, body } = exportTable();
+    const XLSX = await import("xlsx");
+    const ws = XLSX.utils.aoa_to_sheet([h, ...body]);
+    ws["!cols"] = [11, 14, 50, 16, 10, 10, 14, 13, 11, 14, 14, 14, 45].map((wch) => ({ wch }));
+    ws["!autofilter"] = { ref: `A1:M${body.length + 1}` };
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "ผลงานรายเทป");
+    const name = `performance-${startDate}-${endDate}.xlsx`;
+    XLSX.writeFile(wb, name);
+    recordDownload("excel-performance", name, body.length);
+  }
+  function download() {
+    const { h, body } = exportTable();
     const esc = (v: unknown) => `"${String(v ?? "").replaceAll('"', '""')}"`;
     const blob = new Blob(
       [[h, ...body].map((r) => r.map(esc).join(",")).join("\n")],
@@ -1476,6 +1494,7 @@ export function useDashboard(enabled = true) {
     saveCurrentDataToCloud,
     applyDatePreset,
     download,
+    downloadExcel,
     reset,
   };
 }
