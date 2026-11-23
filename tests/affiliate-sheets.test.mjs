@@ -157,11 +157,17 @@ test("the ad revenue report is refused and adds nothing, not even its daily tota
   assert.equal(out.sources[0].kind, "unknown");
 });
 
-test("the newer product report: commission from Earned revenue, then Total commission", () => {
+test("the newer product report: commission from Total commission (Earned revenue is only the confirmed part)", () => {
   const days = Array.from({ length: 31 }, (_, i) => ({ Date: `2026-10-${String(i + 1).padStart(2, "0")}`, "Total sales (THB)": 1 }));
   const earned = { "Table data": [{ Product: "p1", "Product title": "a", "Earned revenue (THB)": 12, "Total commission (THB)": 15, "Total sales (THB)": 100, Orders: 2, "Product clicks": 9 }], Totals: days };
   const out = readAffiliateSheets([earned]);
-  assert.equal(out.productsByMonth["2026-10"][0].commission, 12);
+  assert.equal(out.productsByMonth["2026-10"][0].commission, 15);
+  // Not confirmed yet: Earned revenue 0, the commission is still there.
+  const unconfirmed = { "Table data": [{ Product: "p2", "Earned revenue (THB)": 0, "Total commission (THB)": 8, Orders: 1 }], Totals: days };
+  assert.equal(readAffiliateSheets([unconfirmed]).productsByMonth["2026-10"][0].commission, 8);
+  // Only Earned revenue in the file: used.
+  const onlyEarned = { "Table data": [{ Product: "p3", "Earned revenue (THB)": 4, Orders: 1 }], Totals: days };
+  assert.equal(readAffiliateSheets([onlyEarned]).productsByMonth["2026-10"][0].commission, 4);
   assert.equal(out.productsByMonth["2026-10"][0].clicks, 9);
   // Its Totals tab is sales, not revenue: the daily revenue is left alone.
   assert.deepEqual(out.daily, []);
@@ -177,4 +183,29 @@ test("a new revenue report replaces the month's products instead of mixing two t
   const next = { "Table data": [{ Product: "a", "Earned revenue (THB)": 6, Orders: 2 }, { Product: "c", "Earned revenue (THB)": 1, Orders: 1 }], Totals: days };
   const merged = mergeAffiliate(readAffiliateSheets([old, clicks]), readAffiliateSheets([next]));
   assert.deepEqual(merged.productsByMonth["2026-10"].map((p) => [p.productId, p.commission, p.clicks]), [["a", 6, 7], ["c", 1, undefined]]);
+});
+
+test("a month's totals come from its export's Total row when the export covers the whole month", async () => {
+  const { mergeAffiliate, withFileTotals, withoutMonth } = await import("../lib/dashboard/affiliateSheets.ts");
+  const days = Array.from({ length: 31 }, (_, i) => ({ Date: `2026-10-${String(i + 1).padStart(2, "0")}`, "Product clicks": 1 }));
+  const content = {
+    "Table data": [
+      { Content: "Total", "Earned revenue (THB)": 900, "Total sales (THB)": 50000, Orders: 3183 },
+      { Content: "v1", "Video title": "a", "Earned revenue (THB)": 500, Orders: 3000 },
+    ],
+    Totals: days,
+  };
+  // The period file was read on 10 Oct: its October row is short.
+  const stored = { monthly: [{ month: "2026-09", earnedRevenue: 1, orders: 3003, totalSales: 2 }, { month: "2026-10", earnedRevenue: 1, orders: 1009, totalSales: 2 }], daily: [], products: [], contents: [], productRange: { from: "", to: "" }, contentRange: { from: "", to: "" }, productsByMonth: {}, contentsByMonth: {}, sources: [] };
+  const merged = mergeAffiliate(stored, readAffiliateSheets([content]));
+  assert.deepEqual(merged.fileTotals["2026-10"], { month: "2026-10", earnedRevenue: 900, orders: 3183, totalSales: 50000, to: "2026-10-31" });
+  const shown = withFileTotals(merged);
+  assert.deepEqual(shown.monthly.map((m) => [m.month, m.orders]), [["2026-09", 3003], ["2026-10", 3183]]);
+  assert.equal(merged.monthly.find((m) => m.month === "2026-10").orders, 1009); // stored data unchanged
+  // A part-month export does not replace a period row; with no period row it is used.
+  const part = { ...content, Totals: days.slice(0, 14) };
+  assert.equal(withFileTotals(mergeAffiliate(stored, readAffiliateSheets([part]))).monthly.find((m) => m.month === "2026-10").orders, 1009);
+  assert.equal(withFileTotals(mergeAffiliate({ ...stored, monthly: [] }, readAffiliateSheets([part]))).monthly.find((m) => m.month === "2026-10").orders, 3183);
+  // Deleting the month drops its totals too.
+  assert.equal(withoutMonth(merged, "2026-10").fileTotals["2026-10"], undefined);
 });

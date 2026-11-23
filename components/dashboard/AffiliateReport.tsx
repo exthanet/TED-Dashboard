@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import { BadgeDollarSign, Upload } from "lucide-react";
 import { isStaticHost } from "@/lib/dashboard/hosting";
 import { loadAffiliateSheets } from "@/lib/firebase";
-import type { AffiliateSheets } from "@/lib/dashboard/affiliateSheets";
+import { withFileTotals, type AffiliateSheets } from "@/lib/dashboard/affiliateSheets";
 import type { User } from "@/lib/auth/types";
 import { AffiliateDashboard } from "@/components/dashboard/sections/AffiliateDashboard";
 import { AffiliateImportModal } from "@/components/dashboard/sections/AffiliateImportModal";
@@ -27,7 +27,7 @@ export default function AffiliateReport({ currentUser }: AffiliateReportProps) {
     if (isStaticHost) return setLoading(false);
     setLoading(true);
     void track(loadAffiliateSheets())
-      .then(setSheets)
+      .then((d) => setSheets(d && withFileTotals(d)))
       .finally(() => setLoading(false));
   };
   useEffect(load, []);

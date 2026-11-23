@@ -60,6 +60,12 @@ export interface AffiliateSheets {
   /** Exports of one calendar month, by "YYYY-MM" (the month is read from their days). */
   productsByMonth: Record<string, AffProduct[]>;
   contentsByMonth: Record<string, AffContent[]>;
+  /**
+   * A month's totals from the "Total" row of its product / content export (YouTube's own sums,
+   * not cut at the export's 500 rows). Used for the month cards when the export covers the whole
+   * month, or when there is no revenue-by-period row for that month (withFileTotals).
+   */
+  fileTotals?: Record<string, AffMonth & { to: string }>;
   /** What each workbook was read as. */
   sources: { kind: "period" | "content" | "product" | "unknown"; tabs: string[]; rows: number; month?: string; from?: string; to?: string; metrics?: "revenue" | "clicks" }[];
 }
@@ -136,8 +142,9 @@ const productsOf = (rows: Row[]): AffProduct[] => {
         title,
         category: inferCategory(title),
         // Studio's product reports name the commission differently: the older one "Estimated revenue",
-        // the newer one "Earned revenue" (with "Total commission" before removals).
-        commission: num(col(r, "Estimated revenue (THB)", "Estimated revenue", "Earned revenue (THB)", "Earned revenue", "Total commission (THB)", "Total commission")),
+        // the newer one "Total commission". Its "Earned revenue" / "Earned commission" is only what is
+        // confirmed so far (0 for most products of a recent month), so it comes last.
+        commission: num(col(r, "Estimated revenue (THB)", "Estimated revenue", "Total commission (THB)", "Total commission", "Earned revenue (THB)", "Earned revenue")),
         totalSales: num(col(r, "Total sales (THB)", "Total sales")),
         orders: num(r.Orders),
         ...("Product clicks" in r || clicksOnly ? { clicks: num(r["Product clicks"]) } : {}),
@@ -230,6 +237,23 @@ export function readAffiliateSheets(workbooks: SheetTabs[]): AffiliateSheets {
     const span = range(days.map((d) => d.date));
     const month = monthOfRange(span);
     out.sources.push({ kind, tabs: Object.keys(tabs), rows: rows.length, ...span, ...(month ? { month } : {}), ...(metrics ? { metrics } : {}) });
+    // The export's own "Total" row: the month's whole earned revenue, orders and sales.
+    const totalRow = (tabs[tableTab(tabs)] || []).find((r) => /^total$/i.test(str(Object.values(r)[0])));
+    if (month && totalRow && metrics !== "clicks" && ("Orders" in totalRow || "Earned revenue (THB)" in totalRow)) {
+      const prev = out.fileTotals?.[month];
+      if (!prev || span.to > prev.to) {
+        out.fileTotals = {
+          ...(out.fileTotals || {}),
+          [month]: {
+            month,
+            earnedRevenue: num(col(totalRow, "Earned revenue (THB)", "Earned revenue")),
+            orders: num(totalRow.Orders),
+            totalSales: num(col(totalRow, "Total sales (THB)", "Total sales")),
+            to: span.to,
+          },
+        };
+      }
+    }
     if (kind === "product") {
       const list = productsOf(rows);
       const clicks = metrics === "clicks";
@@ -385,7 +409,25 @@ export function mergeAffiliate(current: AffiliateSheets | null, draft: Affiliate
     productsByMonth: mergeProductMonths(current, draft),
     contentsByMonth: { ...(current.contentsByMonth || {}), ...draft.contentsByMonth },
     sources: dedupeSources([...(current.sources || []), ...draft.sources]),
+    fileTotals: { ...(current.fileTotals || {}), ...(draft.fileTotals || {}) },
   };
+}
+
+const monthEnd = (m: string) => new Date(Date.UTC(Number(m.slice(0, 4)), Number(m.slice(5, 7)), 0)).toISOString().slice(0, 10);
+
+/**
+ * The month cards' numbers: the revenue-by-period rows, with a month taken from its export's
+ * "Total" row when that export covers the whole month (a period file read early in the month
+ * stays short) or when the period file has no row for it. The stored data is not changed.
+ */
+export function withFileTotals<T extends AffiliateSheets>(data: T): T {
+  const files = Object.values(data.fileTotals || {});
+  if (!files.length) return data;
+  const byMonth = new Map(data.monthly.map((m) => [m.month, m]));
+  for (const f of files) {
+    if (f.to >= monthEnd(f.month) || !byMonth.has(f.month)) byMonth.set(f.month, { month: f.month, earnedRevenue: f.earnedRevenue, orders: f.orders, totalSales: f.totalSales });
+  }
+  return { ...data, monthly: [...byMonth.values()].sort((a, b) => a.month.localeCompare(b.month)) };
 }
 
 /** A month's products from the links: a revenue-only or clicks-only report keeps the other half already stored. */
@@ -418,5 +460,7 @@ export function withoutMonth(data: AffiliateSheets & { readAt?: string }, month:
   const contentsByMonth = { ...data.contentsByMonth };
   delete productsByMonth[month];
   delete contentsByMonth[month];
-  return { ...data, productsByMonth, contentsByMonth, sources: data.sources.filter((s) => s.month !== month) };
+  const fileTotals = { ...(data.fileTotals || {}) };
+  delete fileTotals[month];
+  return { ...data, productsByMonth, contentsByMonth, fileTotals, sources: data.sources.filter((s) => s.month !== month) };
 }

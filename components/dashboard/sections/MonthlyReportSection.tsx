@@ -32,7 +32,7 @@ import { loadAffiliateSheets, loadRevenueApiMonths, loadRevenueDataFromFirebase 
 import { revenueMonths } from "@/components/dashboard/sections/RevenueMonthPage";
 import type { RevenueData } from "@/lib/dashboard/revenueParser";
 import type { RevenueApiMonth, RevenueItem } from "@/lib/dashboard/revenueApi";
-import type { AffiliateSheets } from "@/lib/dashboard/affiliateSheets";
+import { withFileTotals, type AffiliateSheets } from "@/lib/dashboard/affiliateSheets";
 import { EMPTY_LAYOUT, cleanLayout, layoutTemplate, movePage, orderedIds, pageIds, type ReportLayout } from "@/lib/dashboard/reportLayout";
 import { vsNormal, vsNormalTone } from "@/lib/dashboard/vsNormal";
 import "@/styles/monthly-report.css";
@@ -916,7 +916,7 @@ export function MonthlyReportSection({ rows, program, latestDate, isAdmin, userN
   // YouTube Revenue: the imported file plus the API months (both unreadable without the revenue permission).
   const [revenue, setRevenue] = useState<{ data: RevenueData | null; months: RevenueItem[]; api: RevenueApiMonth[] } | null>(null);
   useEffect(() => {
-    void loadAffiliateSheets().then(setAffiliate);
+    void loadAffiliateSheets().then((d) => setAffiliate(d && withFileTotals(d)));
     void Promise.all([loadRevenueDataFromFirebase().catch(() => null), loadRevenueApiMonths()]).then(([data, api]) => setRevenue({ data, months: revenueMonths(data, api), api }));
   }, []);
   const slides = useMemo(
