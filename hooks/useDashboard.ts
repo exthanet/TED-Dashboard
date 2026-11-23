@@ -1305,7 +1305,8 @@ export function useDashboard(enabled = true) {
         "Digital Views",
         "Engagement",
         "Engagement Rate",
-        "TV Rating Score",
+        "TV Rating One31",
+        "TV Rating GMM25",
         "Video Link",
       ],
       body = filtered.map((r) => [
@@ -1320,6 +1321,7 @@ export function useDashboard(enabled = true) {
         r.engagement,
         r.engagementRate,
         r.ratingTotal,
+        r.gmmRating || "",
         /^https?:\/\//.test(r.url || "") ? r.url : "",
       ]);
     const esc = (v: unknown) => `"${String(v ?? "").replaceAll('"', '""')}"`;
