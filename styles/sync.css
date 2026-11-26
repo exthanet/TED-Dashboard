@@ -496,3 +496,40 @@
   align-items: flex-start;
   gap: 2px;
 }
+
+/* สถานะการ Sync → วิธีต่อ API ตรง (SyncApiGuide). */
+.sync-api-guide table {
+  width: 100%;
+  margin: 4px 0;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+.sync-api-guide th {
+  width: 90px;
+  padding: 4px 8px 4px 0;
+  text-align: left;
+  vertical-align: top;
+  white-space: nowrap;
+}
+.sync-api-guide td {
+  padding: 4px 0;
+  border-bottom: 1px solid #eef2f7;
+}
+.sync-api-guide .ok {
+  color: #15803d;
+  font-weight: 600;
+}
+.sync-api-guide .muted {
+  color: #64748b;
+  font-weight: 600;
+}
+.sync-api-guide h4 {
+  margin: 12px 0 4px;
+  font-size: 13px;
+}
+.sync-api-guide ol {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 12.5px;
+  line-height: 1.6;
+}

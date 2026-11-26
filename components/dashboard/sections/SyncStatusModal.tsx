@@ -16,6 +16,7 @@ import {
 import { track } from "@/lib/loadingBar";
 import { recordDownload } from "@/lib/auth/activity";
 import { SyncSourceMatrix } from "./SyncSourceMatrix";
+import { SyncApiGuide } from "./SyncApiGuide";
 
 const thTime = (iso?: string) =>
   iso
@@ -296,6 +297,8 @@ export function SyncStatusModal({
         <p className="sync-note">
           ในไฟล์ zip: masterData.csv, growthDaily.csv, snapshot-latest.csv, ytAnalytics-videos.csv, accMonthly.csv, revenue-monthly.csv, thumbnails.csv, ข้อมูลอื่นเป็น JSON และไฟล์ตรวจสอบของรอบนั้น (sync-report/) · ต้องล็อกอิน GitHub ด้วยบัญชีที่มีสิทธิ์ใน repo ก่อนกดดาวน์โหลด · CSV เปิดใน Excel ได้ (ภาษาไทยแสดงถูก)
         </p>
+
+        <SyncApiGuide sources={latest?.sources} />
       </section>
     </div>
   );
