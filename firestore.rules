@@ -135,6 +135,17 @@ service cloud.firestore {
       allow read: if can('revenue');
       allow write: if false;
     }
+    // Each channel's revenue by source for a month (YouTube Studio's Revenue source files), saved when
+    // an admin builds the month's report (lib/revenueSourcesData.ts); YouTube Revenue reads it.
+    match /revenueSources/{month} {
+      allow read: if can('revenue');
+      allow write: if isAdmin()
+        && month.matches('^[0-9]{4}-[0-9]{2}$')
+        && request.resource.data.keys().hasOnly(["month", "channels", "files", "savedBy", "savedAt"])
+        && request.resource.data.month == month
+        && request.resource.data.channels is list
+        && request.resource.data.channels.size() <= 60;
+    }
     // YouTube Revenue from the API for months the file has not got yet (lib/integrations/revenueApiCollect.ts).
     match /revenueApi/{doc} {
       allow read: if can('revenue');

@@ -101,5 +101,7 @@ const result = await buildRevenueReport({
 });
 const out = process.env.ACC_OUT || path.join(abs, result.fileName);
 fs.writeFileSync(out, Buffer.from(result.data));
+// ACC_CHANNELS_JSON: also write each channel's figures (what the dashboard saves to revenueSources/{month}).
+if (process.env.ACC_CHANNELS_JSON) fs.writeFileSync(process.env.ACC_CHANNELS_JSON, JSON.stringify({ month: `${year}-${month}`, files: plan.zips.length, channels: result.channels }));
 console.log(result.report.join("\n"));
 console.log(`\nใส่ข้อมูล ${result.filled} ช่อง · ไม่มีไฟล์ ${result.rows - result.filled} ช่อง (ใส่ "-")\nบันทึกที่: ${out}`);

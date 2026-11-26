@@ -10,6 +10,8 @@ import { accSheetRows, type AccMonth } from "@/lib/dashboard/accMonthly";
 import { buildRevenueReport, checkFolder, cmsChannelsOf, planFolder, workbookChannels, type CheckItem, type FolderFile, type FolderPlan } from "@/lib/dashboard/revenueSourceReport";
 import { recordDownload } from "@/lib/auth/activity";
 import { track } from "@/lib/loadingBar";
+import { saveRevenueSourceMonth } from "@/lib/revenueSourcesData";
+import { auth } from "@/lib/firebase";
 
 type Picked = FolderFile & { file: File };
 const monthLabel = (m: string) => new Date(`${m}-01T00:00:00Z`).toLocaleDateString("th-TH", { month: "long", year: "numeric", timeZone: "UTC" });
@@ -124,7 +126,16 @@ export function RevenueSourceReportPanel({ month, onClose }: { month: AccMonth |
       a.click();
       setTimeout(() => URL.revokeObjectURL(url), 5000);
       recordDownload("excel-revenue-source", result.fileName, 1);
-      setDone(result);
+      // Each channel's figures for YouTube Revenue (e.g. Shorts Feed ads per channel). The download
+      // is done either way; a failed save is said, not thrown.
+      let saved = "";
+      try {
+        await saveRevenueSourceMonth(month.month, result.channels, plan.zips.length, auth.currentUser?.email || "");
+        saved = "บันทึกรายได้แยกแหล่งของแต่ละช่องลงระบบแล้ว (ใช้ในหน้า YouTube Revenue)";
+      } catch {
+        saved = "⚠️ บันทึกรายได้แยกแหล่งลงระบบไม่สำเร็จ (ไฟล์ดาวน์โหลดแล้ว)";
+      }
+      setDone({ ...result, report: [saved, ...result.report] });
     } catch (e) {
       setError(`สร้างรายงานไม่สำเร็จ: ${e instanceof Error ? e.message : String(e)}`);
     } finally {

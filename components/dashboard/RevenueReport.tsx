@@ -87,8 +87,9 @@ const MONTH_ORDER = [
 export default function RevenueReport({ currentUser }: RevenueReportProps) {
   const [data, setData] = useState<RevenueData | null>(null);
   const [selectedYear, setSelectedYear] = useState<string>("ALL");
-  // Which numbers the page shows: Overall, one company's sheet, or both companies side by side.
-  const [company, setCompany] = useState<"overall" | "digital" | "entertainment" | "compare">("overall");
+  // The page shows the overall numbers (the company buttons were taken off; the company sheets stay
+  // in the data and in the comparison component for later use).
+  const company = "overall" as "overall" | "digital" | "entertainment" | "compare";
   const [currencyPicked, setCurrency] = useState<Currency>("USD");
   const [importOpen, setImportOpen] = useState(false);
   const [sourceType, setSourceType] = useState<"firebase" | "file">("firebase");
@@ -456,22 +457,6 @@ export default function RevenueReport({ currentUser }: RevenueReportProps) {
             </div>
           )}
 
-          {hasCompanies && (
-            <div className="segmented revenue-company-toggle" aria-label="บริษัท">
-              {(
-                [
-                  ["overall", "รวม"],
-                  ["digital", COMPANY_LABEL.digital],
-                  ["entertainment", COMPANY_LABEL.entertainment],
-                  ["compare", "เทียบ 2 บริษัท"],
-                ] as const
-              ).map(([k, label]) => (
-                <button key={k} className={view === k ? "active" : ""} onClick={() => setCompany(k)}>
-                  {label}
-                </button>
-              ))}
-            </div>
-          )}
 
           {years.length > 0 && (
             <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>

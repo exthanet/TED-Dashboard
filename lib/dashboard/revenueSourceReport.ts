@@ -48,6 +48,19 @@ export interface ReportResult {
   report: string[];
   filled: number;
   rows: number;
+  /** Each channel row of the Revenue source table as built (USD; null = no file / "-"), for revenueSources/{YYYY-MM}. */
+  channels: ChannelSources[];
+}
+
+/** One channel line of a month's Revenue source table (rows 53–76). */
+export interface ChannelSources {
+  name: string;
+  /** Source name (SOURCE_COLUMNS) → USD, null where the file had none. */
+  sources: Record<string, number | null>;
+  /** YouTube Studio's Total (or the API's for the split lines); null without a file. */
+  total: number | null;
+  /** ถกไม่เถียง / เงินทองของจริง: split from TERO DIGITAL, "-" for every source but Ads / Premium. */
+  splitFromTeroDigital: boolean;
 }
 
 /** First CSV in the zip with this file name. */
@@ -390,7 +403,14 @@ export async function buildRevenueReport(input: ReportInput): Promise<ReportResu
   wb.calcProperties.fullCalcOnLoad = true;
   const buf = await wb.xlsx.writeBuffer();
   const data = buf instanceof ArrayBuffer ? buf : (buf as Uint8Array).buffer.slice((buf as Uint8Array).byteOffset, (buf as Uint8Array).byteOffset + (buf as Uint8Array).byteLength);
-  return { data: data as ArrayBuffer, fileName: bookName.replace(/\.xlsx$/i, " (generated).xlsx"), report, filled: filled.size, rows: rows.length };
+  const numOrNull = (v: any): number | null => (typeof v === "number" ? v : v && typeof v === "object" && typeof v.result === "number" ? v.result : null);
+  const channels: ChannelSources[] = rows.map((r) => ({
+    name: r.name.trim(),
+    sources: Object.fromEntries(SOURCE_COLUMNS.map((s, i) => [s, numOrNull(sheet.getCell(r.row, 6 + i).value)])),
+    total: numOrNull(sheet.getCell(r.row, LAST + 1).value),
+    splitFromTeroDigital: r.name.trim() !== "TERO Digital" && SPLIT.includes(r.name.trim()),
+  }));
+  return { data: data as ArrayBuffer, fileName: bookName.replace(/\.xlsx$/i, " (generated).xlsx"), report, filled: filled.size, rows: rows.length, channels };
 }
 
 /**
