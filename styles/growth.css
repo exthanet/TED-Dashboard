@@ -2756,3 +2756,33 @@
     margin-left: 0;
   }
 }
+
+/* YouTube Revenue → รายได้แต่ละช่องใน CMS (AccChannelRevenue): same row styles as Monthly ACC. */
+.acc-channel-revenue {
+  margin: 12px 0;
+}
+.acc-channel-revenue .panel-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.acc-channel-revenue h3 {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.acc-channel-revenue .acc-total td {
+  border-top: 2px solid #cbd5e1;
+  font-weight: 800;
+}
+.acc-channel-revenue td.muted {
+  color: #cbd5e1;
+}
+.acc-channel-revenue .acc-program td:first-child {
+  padding-left: 22px;
+}
+.acc-channel-revenue .acc-missing td:first-child {
+  color: #94a3b8;
+}

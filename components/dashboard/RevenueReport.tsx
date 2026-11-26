@@ -5,6 +5,7 @@ import { loadRevenueApiMonths, loadRevenueDataFromFirebase } from "@/lib/firebas
 import { forecastBase, pendingNote, thDay, thMonth, withApiMonths, type RevenueApiMonth, type RevenueItem } from "@/lib/dashboard/revenueApi";
 import type { RevenueData, MonthlyRevenueItem } from "@/lib/dashboard/revenueParser";
 import { RevenueImportModal } from "@/components/dashboard/sections/RevenueImportModal";
+import { AccChannelRevenue } from "@/components/dashboard/sections/AccChannelRevenue";
 import { RevenueCompanyCompare } from "@/components/dashboard/sections/RevenueCompanyCompare";
 import { COMPANY_LABEL, inCurrency, type Currency } from "@/lib/dashboard/revenueCompanies";
 import type { User } from "@/lib/auth/types";
@@ -539,97 +540,6 @@ export default function RevenueReport({ currentUser }: RevenueReportProps) {
         </div>
       ) : (
         <>
-          {/* Revenue Forecasting & Accurate Projection Cards */}
-          {forecast && (
-            <div className="rev-forecast">
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <div className="rev-forecast-icon">
-                    <Calculator size={22} />
-                  </div>
-                  <div>
-                    <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "#111827" }}>
-                      Accurate Revenue Forecast & Year-End Projections ({forecast.currYear})
-                    </h3>
-                    <p style={{ margin: 0, fontSize: 12, color: "#6b7280" }}>
-                      โมเดลคาดการณ์น้ำหนักผสม (3M Momentum + YTD Average + Trailing Run Rate)
-                    </p>
-                  </div>
-                </div>
-
-                <div className="rev-forecast-pill">
-                  บันทึกแล้ว {forecast.recordedMonthsCount}/12 เดือน (เหลืออีก {forecast.remainingMonthsThisYear} เดือน)
-                </div>
-              </div>
-
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-                  gap: 16,
-                  paddingTop: 8,
-                  borderTop: "1px solid #eef0f3",
-                }}
-              >
-                {/* Metric 1: Latest Actual Month */}
-                <div className="rev-forecast-tile">
-                  <div className="rev-forecast-label">
-                    <Calendar size={14} />
-                    <span>ยอดจริงเดือนล่าสุด ({forecast.latestMonthLabel})</span>
-                  </div>
-                  <div className="rev-forecast-value">
-                    {money(forecast.latestMonthRevenue)}
-                  </div>
-                  <small className="rev-forecast-note">
-                    {forecast.latestFromApi ? `จาก API (ประมาณการ) · รอสรุปผล ${thMonth(forecast.latestMonth)}` : "ปิดยอดสมบูรณ์ตามรายงานจริง"}
-                  </small>
-                </div>
-
-                {/* Metric 2: Next Month Forecast */}
-                <div className="rev-forecast-tile">
-                  <div className="rev-forecast-label">
-                    <Sparkles size={14} />
-                    <span>คาดการณ์เดือนถัดไป ({forecast.nextMonthLabel})</span>
-                  </div>
-                  <div className="rev-forecast-value">
-                    {money(forecast.nextMonthForecast)}
-                  </div>
-                  <small className="rev-forecast-note">
-                    คาดการณ์ตามโมเมนตัม 3 เดือนเฉลี่ย ({moneyCompact(forecast.recent3Avg)}/mo)
-                  </small>
-                </div>
-
-                {/* Metric 3: Full Year Forecast Total */}
-                <div className="rev-forecast-tile">
-                  <div className="rev-forecast-label">
-                    <Target size={14} />
-                    <span>คาดการณ์ยอดรวมทั้งปี {forecast.currYear} (Full Year Projected)</span>
-                  </div>
-                  <div className="rev-forecast-value">
-                    {money(forecast.fullYearProjectedTotal)}
-                  </div>
-                  <small className="rev-forecast-note">
-                    สะสมจริง {moneyCompact(forecast.yearActualTotal)} + คาดการณ์อีก {forecast.remainingMonthsThisYear} เดือน {moneyCompact(forecast.projectedRemainingRevenue)}
-                  </small>
-                </div>
-
-                {/* Metric 4: Annual Run Rate */}
-                <div className="rev-forecast-tile">
-                  <div className="rev-forecast-label">
-                    <TrendingUp size={14} />
-                    <span>YTD Run-rate (อัตราเฉลี่ยรายปี)</span>
-                  </div>
-                  <div className="rev-forecast-value">
-                    {money(forecast.annualRunRate)}
-                  </div>
-                  <small className="rev-forecast-note">
-                    อัตราเฉลี่ย {moneyCompact(forecast.yearActualTotal / forecast.recordedMonthsCount)}/เดือน
-                  </small>
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* KPI Cards in USD */}
           <div className="affiliate-kpis" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}>
             <article>
@@ -682,6 +592,9 @@ export default function RevenueReport({ currentUser }: RevenueReportProps) {
               {pending && <small className="rev-pending">{pending}</small>}
             </article>
           </div>
+
+          {/* Each channel's revenue in the CMS (Monthly ACC data) */}
+          <AccChannelRevenue currency={currency} rates={data?.rates} year={selectedYear} />
 
           {/* Charts Grid */}
           <div className="affiliate-grid">
@@ -863,6 +776,97 @@ export default function RevenueReport({ currentUser }: RevenueReportProps) {
               </div>
             </article>
           </div>
+
+          {/* Revenue Forecasting & Accurate Projection Cards */}
+          {forecast && (
+            <div className="rev-forecast">
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div className="rev-forecast-icon">
+                    <Calculator size={22} />
+                  </div>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "#111827" }}>
+                      Accurate Revenue Forecast & Year-End Projections ({forecast.currYear})
+                    </h3>
+                    <p style={{ margin: 0, fontSize: 12, color: "#6b7280" }}>
+                      โมเดลคาดการณ์น้ำหนักผสม (3M Momentum + YTD Average + Trailing Run Rate)
+                    </p>
+                  </div>
+                </div>
+
+                <div className="rev-forecast-pill">
+                  บันทึกแล้ว {forecast.recordedMonthsCount}/12 เดือน (เหลืออีก {forecast.remainingMonthsThisYear} เดือน)
+                </div>
+              </div>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+                  gap: 16,
+                  paddingTop: 8,
+                  borderTop: "1px solid #eef0f3",
+                }}
+              >
+                {/* Metric 1: Latest Actual Month */}
+                <div className="rev-forecast-tile">
+                  <div className="rev-forecast-label">
+                    <Calendar size={14} />
+                    <span>ยอดจริงเดือนล่าสุด ({forecast.latestMonthLabel})</span>
+                  </div>
+                  <div className="rev-forecast-value">
+                    {money(forecast.latestMonthRevenue)}
+                  </div>
+                  <small className="rev-forecast-note">
+                    {forecast.latestFromApi ? `จาก API (ประมาณการ) · รอสรุปผล ${thMonth(forecast.latestMonth)}` : "ปิดยอดสมบูรณ์ตามรายงานจริง"}
+                  </small>
+                </div>
+
+                {/* Metric 2: Next Month Forecast */}
+                <div className="rev-forecast-tile">
+                  <div className="rev-forecast-label">
+                    <Sparkles size={14} />
+                    <span>คาดการณ์เดือนถัดไป ({forecast.nextMonthLabel})</span>
+                  </div>
+                  <div className="rev-forecast-value">
+                    {money(forecast.nextMonthForecast)}
+                  </div>
+                  <small className="rev-forecast-note">
+                    คาดการณ์ตามโมเมนตัม 3 เดือนเฉลี่ย ({moneyCompact(forecast.recent3Avg)}/mo)
+                  </small>
+                </div>
+
+                {/* Metric 3: Full Year Forecast Total */}
+                <div className="rev-forecast-tile">
+                  <div className="rev-forecast-label">
+                    <Target size={14} />
+                    <span>คาดการณ์ยอดรวมทั้งปี {forecast.currYear} (Full Year Projected)</span>
+                  </div>
+                  <div className="rev-forecast-value">
+                    {money(forecast.fullYearProjectedTotal)}
+                  </div>
+                  <small className="rev-forecast-note">
+                    สะสมจริง {moneyCompact(forecast.yearActualTotal)} + คาดการณ์อีก {forecast.remainingMonthsThisYear} เดือน {moneyCompact(forecast.projectedRemainingRevenue)}
+                  </small>
+                </div>
+
+                {/* Metric 4: Annual Run Rate */}
+                <div className="rev-forecast-tile">
+                  <div className="rev-forecast-label">
+                    <TrendingUp size={14} />
+                    <span>YTD Run-rate (อัตราเฉลี่ยรายปี)</span>
+                  </div>
+                  <div className="rev-forecast-value">
+                    {money(forecast.annualRunRate)}
+                  </div>
+                  <small className="rev-forecast-note">
+                    อัตราเฉลี่ย {moneyCompact(forecast.yearActualTotal / forecast.recordedMonthsCount)}/เดือน
+                  </small>
+                </div>
+              </div>
+            </div>
+          )}
         </>
       )}
 
