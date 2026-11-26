@@ -6,7 +6,6 @@ import { Tv2 } from "lucide-react";
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import { loadAccMonths } from "@/lib/accMonthlyData";
 import { accTotals, hasTotalRevenue, monthEnd, rowNote, type AccMonth, type AccNums } from "@/lib/dashboard/accMonthly";
-import { loadRevenueSourceMonths, type RevenueSourceMonth } from "@/lib/revenueSourcesData";
 
 /** Pie: the top channels by revenue, the rest as one slice. */
 const TOP = 7;
@@ -17,13 +16,10 @@ const monthLabel = (m: string) => new Date(`${m}-01T00:00:00Z`).toLocaleDateStri
 export function AccChannelRevenue({ currency, rates, year }: { currency: "USD" | "THB"; rates?: Record<string, number>; year: string }) {
   const [months, setMonths] = useState<AccMonth[] | null>(null);
   const [picked, setPicked] = useState("");
-  // Shorts Feed ads per channel: YouTube Studio's Revenue source files, saved per month by an admin.
-  const [sourceMonths, setSourceMonths] = useState<RevenueSourceMonth[]>([]);
   useEffect(() => {
     loadAccMonths()
       .then(setMonths)
       .catch(() => setMonths([]));
-    void loadRevenueSourceMonths().then(setSourceMonths);
   }, []);
 
   // Months of the year picked at the top (all when "ALL"); the newest finished month first by default.
@@ -38,16 +34,11 @@ export function AccChannelRevenue({ currency, rates, year }: { currency: "USD" |
   const money = (v: number) => new Intl.NumberFormat(thb ? "th-TH" : "en-US", { style: "currency", currency: cur, maximumFractionDigits: 2 }).format((v || 0) * factor);
   const withTotal = hasTotalRevenue(month);
   const total = accTotals(month.rows);
-  // This month's Revenue source figures by channel name (null = no file / not split for that line).
-  const src = sourceMonths.find((m) => m.month === month.month);
-  const shortsOf = (name: string): number | null | undefined => (src ? (src.channels.find((c) => c.name === name.trim())?.sources["Shorts Feed ads"] ?? null) : undefined);
-  const shortsTotal = src ? src.channels.reduce((a, c) => a + (c.sources["Shorts Feed ads"] || 0), 0) : undefined;
-  const cells = (r: AccNums, shorts: number | null | undefined) => (
+  const cells = (r: AccNums) => (
     <>
       <td className="num">{r.views.toLocaleString("en-US")}</td>
       <td className="num">{money(r.adRevenue)}</td>
       <td className="num">{money(r.premiumRevenue)}</td>
-      <td className="num">{typeof shorts === "number" ? money(shorts) : "–"}</td>
       <td className="num strong">{withTotal ? money(r.totalRevenue) : "–"}</td>
     </>
   );
@@ -74,7 +65,6 @@ export function AccChannelRevenue({ currency, rates, year }: { currency: "USD" |
           </h3>
           <p>
             ที่มา: YouTube Analytics API (Monthly ACC)
-            {src ? ` · Shorts Feed Ads จากไฟล์ Revenue source (${src.files} ไฟล์)` : " · Shorts Feed Ads: ยังไม่มีไฟล์ Revenue source ของเดือนนี้ (admin สร้างได้ที่ Monthly ACC → รายงาน Revenue source)"}
             {month.through < monthEnd(month.month) ? ` · เดือนนี้ยังไม่จบ ข้อมูลถึง ${month.through}` : ""}
             {currency === "THB" && !rate ? " · ยังไม่มีอัตราแลกเปลี่ยนของเดือนนี้ แสดงเป็น USD" : ""}
           </p>
@@ -121,7 +111,6 @@ export function AccChannelRevenue({ currency, rates, year }: { currency: "USD" |
               <th className="num" title="Owned Views ของช่องในเดือนนี้ (YouTube Analytics)">Total views</th>
               <th className="num">Ads Partner Revenue</th>
               <th className="num">YouTube Premium</th>
-              <th className="num" title="จากไฟล์ Revenue source ของ YouTube Studio (admin สร้างรายงานใน Monthly ACC) · แถว TERO Digital = ทั้งช่อง TERO DIGITAL">Shorts Feed Ads</th>
               <th className="num" title="ตรงกับ Estimated partner revenue ใน YouTube Analytics">Est. partner revenue</th>
             </tr>
           </thead>
@@ -135,20 +124,20 @@ export function AccChannelRevenue({ currency, rates, year }: { currency: "USD" |
                 </td>
                 {r.missing ? (
                   <>
-                    {Array.from({ length: 5 }, (_, i) => (
+                    {Array.from({ length: 4 }, (_, i) => (
                       <td key={i} className="num muted">
                         –
                       </td>
                     ))}
                   </>
                 ) : (
-                  cells(r as AccNums, shortsOf(r.name))
+                  cells(r as AccNums)
                 )}
               </tr>
             ))}
             <tr className="acc-total">
               <td>รวม</td>
-              {cells(total, shortsTotal)}
+              {cells(total)}
             </tr>
           </tbody>
         </table>
