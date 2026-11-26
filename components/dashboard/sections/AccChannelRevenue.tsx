@@ -3,8 +3,13 @@
 // Monthly ACC data (YouTube Analytics API through the CMS) as รายได้ → Monthly ACC, revenue columns only.
 import { useEffect, useMemo, useState } from "react";
 import { Tv2 } from "lucide-react";
+import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
 import { loadAccMonths } from "@/lib/accMonthlyData";
 import { accTotals, hasTotalRevenue, monthEnd, otherRevenue, rowNote, type AccMonth, type AccNums } from "@/lib/dashboard/accMonthly";
+
+/** Pie: the top channels by revenue, the rest as one slice. */
+const TOP = 7;
+const COLORS = ["#2563eb", "#7c3aed", "#db2777", "#ea580c", "#059669", "#0891b2", "#ca8a04", "#94a3b8"];
 
 const monthLabel = (m: string) => new Date(`${m}-01T00:00:00Z`).toLocaleDateString("th-TH", { month: "long", year: "numeric", timeZone: "UTC" });
 
@@ -39,6 +44,19 @@ export function AccChannelRevenue({ currency, rates, year }: { currency: "USD" |
     </>
   );
 
+  // Each channel's share: Estimated partner revenue (every source), or Ads + Premium for months without it.
+  const value = (r: AccNums) => (withTotal ? r.totalRevenue : r.adRevenue + r.premiumRevenue);
+  const ranked = month.rows
+    .filter((r) => !r.missing)
+    .map((r) => ({ name: r.name, value: value(r as AccNums) * factor }))
+    .filter((x) => x.value > 0)
+    .sort((a, b) => b.value - a.value);
+  const rest = ranked.slice(TOP);
+  const slices = [...ranked.slice(0, TOP), ...(rest.length ? [{ name: `อื่นๆ (${rest.length} ช่อง)`, value: rest.reduce((a, x) => a + x.value, 0) }] : [])];
+  const sliceTotal = slices.reduce((a, x) => a + x.value, 0);
+  const fmt = (v: number) => new Intl.NumberFormat(thb ? "th-TH" : "en-US", { style: "currency", currency: cur, maximumFractionDigits: 2 }).format(v);
+  const pct = (v: number) => (sliceTotal ? `${((v / sliceTotal) * 100).toFixed(1)}%` : "–");
+
   return (
     <article className="panel acc-channel-revenue">
       <div className="panel-head">
@@ -59,6 +77,32 @@ export function AccChannelRevenue({ currency, rates, year }: { currency: "USD" |
             </option>
           ))}
         </select>
+      </div>
+      <div className="acc-channel-layout">
+      <div className="acc-channel-pie">
+        <strong>สัดส่วนรายได้แต่ละช่อง</strong>
+        <div style={{ height: 220 }}>
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Tooltip formatter={(v, name) => [`${fmt(Number(v))} · ${pct(Number(v))}`, String(name)]} />
+              <Pie data={slices} dataKey="value" nameKey="name" innerRadius={50} outerRadius={90} paddingAngle={1} isAnimationActive={false}>
+                {slices.map((x, i) => (
+                  <Cell key={x.name} fill={COLORS[i % COLORS.length]} />
+                ))}
+              </Pie>
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+        <ul>
+          {slices.map((x, i) => (
+            <li key={x.name}>
+              <i style={{ background: COLORS[i % COLORS.length] }} />
+              <span>{x.name}</span>
+              <b>{pct(x.value)}</b>
+            </li>
+          ))}
+        </ul>
+        <small>{withTotal ? "จาก Est. partner revenue (รายได้รวมทุกแหล่ง)" : "เดือนนี้ยังไม่มี Est. partner revenue: ใช้ Ads + Premium"}</small>
       </div>
       <div className="table-scroll">
         <table>
@@ -99,6 +143,7 @@ export function AccChannelRevenue({ currency, rates, year }: { currency: "USD" |
             </tr>
           </tbody>
         </table>
+      </div>
       </div>
     </article>
   );

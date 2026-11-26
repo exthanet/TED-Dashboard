@@ -2786,3 +2786,40 @@
 .acc-channel-revenue .acc-missing td:first-child {
   color: #94a3b8;
 }
+.acc-channel-layout {
+  display: grid;
+  grid-template-columns: minmax(240px, 300px) 1fr;
+  gap: 16px;
+  align-items: start;
+}
+.acc-channel-pie strong {
+  font-size: 13px;
+}
+.acc-channel-pie ul {
+  display: grid;
+  gap: 3px;
+  margin: 4px 0;
+  padding: 0;
+  list-style: none;
+  font-size: 12px;
+}
+.acc-channel-pie li {
+  display: grid;
+  grid-template-columns: 10px 1fr auto;
+  align-items: center;
+  gap: 6px;
+}
+.acc-channel-pie li i {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+.acc-channel-pie small {
+  color: #64748b;
+  font-size: 11px;
+}
+@media (max-width: 860px) {
+  .acc-channel-layout {
+    grid-template-columns: 1fr;
+  }
+}
