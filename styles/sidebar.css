@@ -242,3 +242,21 @@ html[data-theme="light"] .brand-logo.light { display: block; }
   letter-spacing: 0.2px;
   white-space: nowrap;
 }
+
+/* "[360 mark] Insights": the mark is as tall as the line, so it doesn't outshine the word. */
+.brand-sub {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2em;
+}
+.mark-360 {
+  display: block;
+  height: 1.3em;
+  width: auto;
+  aspect-ratio: 46 / 24;
+  flex-shrink: 0;
+}
+/* In the menu: mark + word run the logo width (118px). */
+.brand h1 .brand-sub {
+  font-size: 18px;
+}

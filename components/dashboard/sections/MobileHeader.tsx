@@ -2,6 +2,7 @@
 import type { DashboardModel } from "@/hooks/useDashboard";
 import { Menu, X } from "lucide-react";
 import { BRAND } from "@/lib/brand";
+import { Mark360 } from "@/components/dashboard/shared/Mark360";
 // Importing master data is desktop-only, so the phone header has no upload button.
 export function MobileHeader({
   menuOpen,
@@ -21,7 +22,10 @@ export function MobileHeader({
         {/* The bar is black in both themes, so it always takes the white-lettered logo. */}
         <strong className="mobile-brand" aria-label={BRAND.product}>
           <img src="/brand/tero-digital-dark.png" alt="" />
-          <span>{BRAND.productShort}</span>
+          <span className="brand-sub">
+            <Mark360 />
+            Insights
+          </span>
         </strong>
         <span className="mobile-header-spacer" />
       </header>

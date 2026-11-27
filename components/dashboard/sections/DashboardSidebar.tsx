@@ -36,6 +36,7 @@ import {
   Users,
   X, MonitorPlay, GitFork, UsersRound } from "lucide-react";
 import { BRAND } from "@/lib/brand";
+import { Mark360 } from "@/components/dashboard/shared/Mark360";
 import { can, type Perm } from "@/lib/auth/permissions";
 
 type Tab = "overview" | "platform" | "programs" | "search" | "trending" | "revenue" | "affiliate" | "growth" | "quality" | "thumbnail" | "youtube" | "acc" | "advice" | "help" | "monthly" | "followers";
@@ -301,7 +302,11 @@ export function DashboardSidebar({
             {/* The company logo in place of "TERO": white lettering on the black menu, the original on the light one. */}
             <img className="brand-logo dark" src="/brand/tero-digital-dark.png" alt="" />
             <img className="brand-logo light" src="/brand/tero-digital.png" alt="" />
-            <span>{BRAND.productShort}</span>
+            {/* "360" drawn as its mark, then the word. */}
+            <span className="brand-sub">
+              <Mark360 />
+              Insights
+            </span>
           </h1>
         </div>
 
