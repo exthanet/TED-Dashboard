@@ -67,9 +67,9 @@
   color: #fff;
 }
 .sidebar nav a.active {
-  background: linear-gradient(100deg, #0870ff, #0344bc);
+  background: linear-gradient(100deg, #ef3b3f, #c8161c);
   color: #fff;
-  box-shadow: 0 7px 20px #0068ff35;
+  box-shadow: 0 7px 20px #e0262b40;
 }
 
 .sidebar-foot {

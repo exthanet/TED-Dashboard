@@ -2,10 +2,10 @@
 // ผู้ติดตาม: every company account and its followers, grouped by platform or by show
 // (รายการ), with the total and the online views of the last 12 months from masterData.
 // Numbers come from accountStats (the daily sync); an account without an API shows the
-// admin's typed number marked "รอตรวจสอบ". Click a card for a popup with its daily
-// followers and a link to the account; download the board as CSV.
-import { useEffect, useMemo, useState } from "react";
-import { Activity, ChartLine, Clapperboard, Clock, Download, ExternalLink, Eye, Heart, MessageCircle, Pencil, PlugZap, Settings, Share2, TrendingDown, TrendingUp, TriangleAlert, Users, X } from "lucide-react";
+// admin's typed number marked "รอตรวจสอบ". One table row per group; open a row for its accounts,
+// click an account for a popup with its daily followers and a link; download the board as CSV.
+import { Fragment, useEffect, useMemo, useState } from "react";
+import { Activity, ChartLine, ChevronDown, Clapperboard, Download, ExternalLink, Eye, Heart, MessageCircle, Pencil, PlugZap, Settings, Share2, TriangleAlert, Users, X } from "lucide-react";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import type { RecordRow } from "@/lib/dashboard/types";
 import {
@@ -30,6 +30,7 @@ import { loadAccountStats, loadSocialAccounts } from "@/lib/socialAccountsData";
 import { dateLabel } from "@/lib/dashboard/format";
 import { track } from "@/lib/loadingBar";
 import { MediaKit } from "@/components/dashboard/sections/MediaKit";
+import { PlatformMark } from "@/components/dashboard/shared/PlatformMark";
 
 export const PLATFORM_COLOR: Record<SocialPlatform, string> = {
   facebook: "#1877f2",
@@ -59,21 +60,6 @@ function Logo({ a }: { a: SocialAccount }) {
   );
 }
 
-/** Where the number on a card comes from: the platform's API, Metricool, both disagreeing, or typed. */
-function SourceBadge({ a, stat }: { a: SocialAccount; stat?: AccountStat }) {
-  const src = sourceOf(a, stat);
-  const s = SOURCE_BADGE[src];
-  const detail = [stat?.sources?.api && `API ${full(stat.sources.api.value)} (${dayTh(stat.sources.api.date)})`, stat?.sources?.metricool && `Metricool ${full(stat.sources.metricool.value)} (${dayTh(stat.sources.metricool.date)})`, stat?.check]
-    .filter(Boolean)
-    .join(" · ");
-  return (
-    <span className={`followers-src ${src}`} title={detail || s.title}>
-      <s.Icon size={11} aria-hidden="true" />
-      {s.label}
-    </span>
-  );
-}
-
 export function sourceOf(a: SocialAccount, stat?: AccountStat): keyof typeof SOURCE_BADGE {
   if (a.source === "manual") return "manual";
   if (stat?.check) return "check";
@@ -87,69 +73,16 @@ const SOURCE_BADGE = {
   manual: { label: PENDING, title: "ยังไม่ได้ต่อ API · ตัวเลขกรอกโดยผู้ดูแล", Icon: Pencil },
 } as const;
 
-/** The account's posts in the last 12 months: posts, views, likes, comments, shares and ER, each with its icon. */
-function PostStats({ totals }: { totals: PostTotals | null }) {
-  if (!totals) return <span className="followers-stats-row none">ไม่มีข้อมูลโพสต์ (ไม่ได้ sync โพสต์ของบัญชีนี้)</span>;
-  const items = [
-    { Icon: Clapperboard, label: "โพสต์", value: full(totals.posts) },
-    { Icon: Eye, label: "วิว", value: shortCount(totals.views) },
-    { Icon: Heart, label: "ไลก์", value: shortCount(totals.likes) },
-    { Icon: MessageCircle, label: "คอมเมนต์", value: shortCount(totals.comments) },
-    { Icon: Share2, label: "แชร์", value: shortCount(totals.shares) },
-    { Icon: Activity, label: "ER", value: totals.er === null ? "–" : `${(totals.er * 100).toFixed(1)}%` },
-  ];
-  return (
-    <span className="followers-stats-row" title={`${full(totals.posts)} โพสต์ใน 12 เดือนล่าสุด`}>
-      {items.map(({ Icon, label, value }) => (
-        <span key={label}>
-          <Icon size={14} aria-hidden="true" />
-          <b>{value}</b>
-          {label}
-        </span>
-      ))}
-    </span>
-  );
-}
-
 /**
- * A group's header: its followers and, for the accounts that have posts in the system, the
- * 12-month posts, views, likes, comments, shares and ER added across platforms.
+ * Posts, views and ER added across the accounts that have posts in the system (12 months);
+ * null when none has. ER = (likes + comments + shares) ÷ views.
  */
-function GroupTotals({ followers, totals }: { followers: number; totals: (PostTotals | null)[] }) {
+function sumPosts(totals: (PostTotals | null)[]) {
   const have = totals.filter((t): t is PostTotals => !!t);
-  const sum = (k: "posts" | "views" | "likes" | "comments" | "shares") => have.reduce((a, t) => a + t[k], 0);
-  const views = sum("views");
-  const items = have.length
-    ? [
-        { Icon: Clapperboard, label: "โพสต์", value: full(sum("posts")) },
-        { Icon: Eye, label: "วิว", value: shortCount(views) },
-        { Icon: Heart, label: "ไลก์", value: shortCount(sum("likes")) },
-        { Icon: MessageCircle, label: "คอมเมนต์", value: shortCount(sum("comments")) },
-        { Icon: Share2, label: "แชร์", value: shortCount(sum("shares")) },
-        { Icon: Activity, label: "ER", value: views ? `${(((sum("likes") + sum("comments") + sum("shares")) / views) * 100).toFixed(1)}%` : "–" },
-      ]
-    : [];
-  return (
-    <span className="followers-group-totals" title={have.length < totals.length ? `ยอดโพสต์รวมเฉพาะ ${have.length} จาก ${totals.length} บัญชีที่มีข้อมูลโพสต์` : "ยอดโพสต์รวม 12 เดือนล่าสุด"}>
-      <span className="followers">
-        <span className="t">
-          <Users size={15} aria-hidden="true" />
-          <b>{full(followers)}</b>
-        </span>
-        ผู้ติดตาม
-      </span>
-      {items.map(({ Icon, label, value }) => (
-        <span key={label}>
-          <span className="t">
-            <Icon size={15} aria-hidden="true" />
-            <b>{value}</b>
-          </span>
-          {label}
-        </span>
-      ))}
-      {!have.length && <span className="none">ไม่มีข้อมูลโพสต์</span>}
-    </span>
-  );
+  if (!have.length) return null;
+  const add = (k: "posts" | "views" | "likes" | "comments" | "shares") => have.reduce((a, t) => a + t[k], 0);
+  const views = add("views");
+  return { posts: add("posts"), views, er: views ? (add("likes") + add("comments") + add("shares")) / views : null };
 }
 
 interface Group {
@@ -182,6 +115,15 @@ export function FollowersSection({ rows, isAdmin, openSettings }: { rows: Record
   const [stats, setStats] = useState<Record<string, AccountStat>>({});
   const [error, setError] = useState("");
   const [picked, setPicked] = useState("");
+  // Rows opened to show their accounts ("view:key"); all closed at first.
+  const [open, setOpen] = useState<Set<string>>(() => new Set());
+  const toggle = (k: string) =>
+    setOpen((prev) => {
+      const next = new Set(prev);
+      if (next.has(k)) next.delete(k);
+      else next.add(k);
+      return next;
+    });
   const [view, setView] = useState<View>(() => {
     try {
       return localStorage.getItem(VIEW_KEY) === "group" ? "group" : "platform";
@@ -265,11 +207,11 @@ export function FollowersSection({ rows, isAdmin, openSettings }: { rows: Record
         </div>
         <div className="ranking-controls">
           <div className="segmented">
-            <button className={view === "platform" ? "active" : ""} onClick={() => pickView("platform")}>
-              จัดตามแพลตฟอร์ม
-            </button>
             <button className={view === "group" ? "active" : ""} onClick={() => pickView("group")}>
               จัดตามรายการ
+            </button>
+            <button className={view === "platform" ? "active" : ""} onClick={() => pickView("platform")}>
+              จัดตามแพลตฟอร์ม
             </button>
           </div>
           {isAdmin && openSettings && (
@@ -291,110 +233,135 @@ export function FollowersSection({ rows, isAdmin, openSettings }: { rows: Record
 
       {shown.length > 0 && (
         <div className="followers-board">
-          <div className="followers-hero">
-            <div>
-              <strong>{shortCount(total)}</strong>
-              <span className="followers-total-label">Online platform followers and subscribers</span>
+          <div className="followers-kpis">
+            <div className="followers-kpi">
+              <span className="followers-kpi-label">
+                <Users size={16} aria-hidden="true" /> ผู้ติดตามรวม
+              </span>
+              <span className="followers-kpi-row">
+                <strong>{shortCount(total)}</strong>
+                {pending.length > 0 && (
+                  <span className="followers-kpi-pill" title={`รวมตัวเลข${PENDING} ${full(pendingTotal)} คน`}>
+                    {PENDING} {pending.length} บัญชี
+                  </span>
+                )}
+              </span>
               <small>
                 {full(total)} · {shown.length} บัญชี{updated ? ` · ข้อมูลถึง ${dayTh(updated)}` : ""}
-                {pending.length ? ` · รวมตัวเลข${PENDING} ${pending.length} บัญชี (${full(pendingTotal)})` : ""}
               </small>
             </div>
-            <div className="followers-views">
-              Total online view
-              <b>{shortCount(views12)} views / year</b>
+            <div className="followers-kpi">
+              <span className="followers-kpi-label">
+                <Eye size={16} aria-hidden="true" /> วิวออนไลน์
+              </span>
+              <span className="followers-kpi-row">
+                <strong>{shortCount(views12)}</strong>
+              </span>
               <small>วิวของโพสต์ 12 เดือนล่าสุดในระบบ</small>
             </div>
           </div>
 
-          {groups.map((g) => (
-            <section key={g.key} className="followers-group">
-              <header>
-                <span>
-                  {view === "platform" && <i className="followers-dot" style={{ background: PLATFORM_COLOR[g.key as SocialPlatform] }} />}
-                  {g.label}
-                  {view === "group" && (
-                    <span className="followers-group-platforms">
-                      {[...new Set(g.accounts.map((a) => a.platform))].map((p) => (
-                        <i key={p} className="followers-dot" style={{ background: PLATFORM_COLOR[p] }} title={PLATFORM_LABEL[p]} />
-                      ))}
-                    </span>
-                  )}
-                  <small>{g.accounts.length} บัญชี</small>
+          <div className="followers-table-head">
+            <h3>{view === "group" ? "ผู้ติดตามตามรายการ" : "ผู้ติดตามตามแพลตฟอร์ม"}</h3>
+            <span className="followers-legend">
+              {(Object.keys(SOURCE_BADGE) as (keyof typeof SOURCE_BADGE)[]).map((k) => (
+                <span key={k} title={SOURCE_BADGE[k].title}>
+                  <i className={`followers-src-dot ${k}`} /> {SOURCE_BADGE[k].label}
                 </span>
-                <GroupTotals followers={g.total} totals={g.accounts.map((a) => posts12.get(a.id) ?? null)} />
-              </header>
-              <div className="followers-grid">
-                {g.accounts.map((a) => {
-                  const now = currentFollowers(a, stats[a.id]);
-                  const gr = growth(a);
-                  const problem = a.source !== "manual" && stats[a.id]?.error;
+              ))}
+            </span>
+          </div>
+          <div className="followers-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>{view === "group" ? "รายการ / บัญชี" : "แพลตฟอร์ม / บัญชี"}</th>
+                  <th className="num">บัญชี</th>
+                  <th className="num">ผู้ติดตาม</th>
+                  <th className="num" title="ผู้ติดตามที่เพิ่มหรือลดใน 30 วัน (ไม่นับบัญชีที่กรอกเอง)">30 วัน</th>
+                  <th className="num" title="โพสต์ใน 12 เดือนล่าสุด">โพสต์</th>
+                  <th className="num" title="วิวของโพสต์ใน 12 เดือนล่าสุด">วิว</th>
+                  <th className="num" title="(ไลก์ + คอมเมนต์ + แชร์) ÷ วิว">ER</th>
+                </tr>
+              </thead>
+              <tbody>
+                {groups.map((g) => {
+                  const isOpen = open.has(`${view}:${g.key}`);
+                  const sum = sumPosts(g.accounts.map((a) => posts12.get(a.id) ?? null));
+                  const grs = g.accounts.map(growth).filter((v): v is number => v !== null);
+                  const gGrowth = grs.length ? grs.reduce((a, v) => a + v, 0) : null;
                   return (
-                    <div
-                      key={a.id}
-                      role="button"
-                      tabIndex={0}
-                      className={`followers-card ${picked === a.id ? "active" : ""}`}
-                      onClick={() => setPicked(a.id)}
-                      onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), setPicked(a.id))}
-                      title={problem || stats[a.id]?.check || ""}
-                    >
-                      <SourceBadge a={a} stat={stats[a.id]} />
-                      {accountUrl(a) && (
-                        <a className="followers-open" href={accountUrl(a)} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} aria-label={`เปิด ${a.name} บน ${PLATFORM_LABEL[a.platform]}`}>
-                          <ExternalLink size={14} />
-                        </a>
-                      )}
-                      <span className="followers-card-top">
-                        <Logo a={a} />
-                        <span className="followers-body">
-                          <span className="followers-num">
-                            <Users size={15} aria-hidden="true" />
-                            {now ? full(now.value) : "–"}
-                          </span>
-                          <span className="followers-name">
-                            {view === "group" && (
-                              <span className="followers-pill" style={{ background: PLATFORM_COLOR[a.platform] }}>
-                                {PLATFORM_LABEL[a.platform]}
-                              </span>
-                            )}
-                            <span className="followers-title">{a.name}</span>
-                          </span>
-                          <span className="followers-meta">
-                            {a.source === "manual" ? (
-                              <span className="followers-wait">
-                                <Clock size={12} aria-hidden="true" /> กรอกเมื่อ {dayTh(a.manualDate || "")}
-                              </span>
-                            ) : gr !== null ? (
-                              <span className={gr >= 0 ? "up" : "down"}>
-                                {gr >= 0 ? <TrendingUp size={12} aria-hidden="true" /> : <TrendingDown size={12} aria-hidden="true" />}
-                                {`${gr >= 0 ? "+" : ""}${full(gr)} ใน 30 วัน`}
-                              </span>
-                            ) : problem ? (
-                              <span className="down">ดึงไม่ได้</span>
-                            ) : (
-                              <span>{now ? dayTh(now.date) : "รอ sync"}</span>
-                            )}
-                          </span>
-                        </span>
-                      </span>
-                      <PostStats totals={posts12.get(a.id) ?? null} />
-                    </div>
+                    <Fragment key={g.key}>
+                      <tr className={`followers-row-group ${isOpen ? "open" : ""}`} onClick={() => toggle(`${view}:${g.key}`)}>
+                        <td>
+                          <button type="button" className="followers-toggle" aria-expanded={isOpen} aria-label={`${isOpen ? "ซ่อน" : "แสดง"}บัญชีของ ${g.label}`}>
+                            <ChevronDown size={15} />
+                          </button>
+                          {view === "platform" ? (
+                            <PlatformMark platform={g.key} />
+                          ) : (
+                            <span className="followers-marks">
+                              {[...new Set(g.accounts.map((a) => a.platform))].map((p) => (
+                                <PlatformMark key={p} platform={p} size={13} />
+                              ))}
+                            </span>
+                          )}
+                          <b>{g.label}</b>
+                        </td>
+                        <td className="num">{g.accounts.length}</td>
+                        <td className="num strong">{full(g.total)}</td>
+                        <td className={`num ${gGrowth === null ? "muted" : gGrowth >= 0 ? "up" : "down"}`}>{gGrowth === null ? "–" : `${gGrowth >= 0 ? "+" : ""}${full(gGrowth)}`}</td>
+                        <td className={`num ${sum ? "" : "muted"}`}>{sum ? full(sum.posts) : "–"}</td>
+                        <td className={`num ${sum ? "" : "muted"}`}>{sum ? shortCount(sum.views) : "–"}</td>
+                        <td className={`num ${sum?.er != null ? "" : "muted"}`}>{sum?.er != null ? `${(sum.er * 100).toFixed(1)}%` : "–"}</td>
+                      </tr>
+                      {isOpen &&
+                        g.accounts.map((a) => {
+                          const now = currentFollowers(a, stats[a.id]);
+                          const gr = growth(a);
+                          const problem = a.source !== "manual" && stats[a.id]?.error;
+                          const p = posts12.get(a.id) ?? null;
+                          const src = sourceOf(a, stats[a.id]);
+                          return (
+                            <tr
+                              key={a.id}
+                              className="followers-row-account"
+                              tabIndex={0}
+                              onClick={() => setPicked(a.id)}
+                              onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), setPicked(a.id))}
+                              title={problem || stats[a.id]?.check || "กดเพื่อดูผู้ติดตามรายวัน"}
+                            >
+                              <td>
+                                <i className={`followers-src-dot ${src}`} title={SOURCE_BADGE[src].label} />
+                                {view === "group" && <PlatformMark platform={a.platform} size={14} />}
+                                <span className="followers-title">{a.name}</span>
+                                {accountUrl(a) && (
+                                  <a className="followers-open" href={accountUrl(a)} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} aria-label={`เปิด ${a.name} บน ${PLATFORM_LABEL[a.platform]}`}>
+                                    <ExternalLink size={12} />
+                                  </a>
+                                )}
+                              </td>
+                              <td className="num" />
+                              <td className="num">{now ? full(now.value) : "–"}</td>
+                              <td className={`num ${a.source === "manual" || gr === null ? "muted" : gr >= 0 ? "up" : "down"}`}>
+                                {a.source === "manual" ? `กรอก ${dayTh(a.manualDate || "")}` : gr !== null ? `${gr >= 0 ? "+" : ""}${full(gr)}` : problem ? "ดึงไม่ได้" : "–"}
+                              </td>
+                              <td className={`num ${p ? "" : "muted"}`}>{p ? full(p.posts) : "–"}</td>
+                              <td className={`num ${p ? "" : "muted"}`}>{p ? shortCount(p.views) : "–"}</td>
+                              <td className={`num ${p?.er != null ? "" : "muted"}`}>{p?.er != null ? `${(p.er * 100).toFixed(1)}%` : "–"}</td>
+                            </tr>
+                          );
+                        })}
+                    </Fragment>
                   );
                 })}
-              </div>
-            </section>
-          ))}
-          <p className="followers-legend">
-            <span><PlugZap size={12} /> API = ดึงตรงจากแพลตฟอร์ม</span>
-            <span><ChartLine size={12} /> Metricool</span>
-            <span><TriangleAlert size={12} /> ตรวจสอบ = 2 แหล่งต่างกันเกิน 2%</span>
-            <span><Pencil size={12} /> {PENDING} = กรอกเอง</span>
-            <span><ExternalLink size={12} /> เปิดบัญชี</span>
-            <span><Eye size={12} /> <Heart size={12} /> <MessageCircle size={12} /> <Share2 size={12} /> <Activity size={12} /> <Clapperboard size={12} /> โพสต์ · วิว · ไลก์ · คอมเมนต์ · แชร์ · ER รวม 12 เดือนล่าสุด</span>
-          </p>
+              </tbody>
+            </table>
+          </div>
+          <p className="followers-note">กดแถวเพื่อดูบัญชี · กดชื่อบัญชีเพื่อดูผู้ติดตามรายวันและเทียบรายปี · โพสต์ วิว และ ER นับโพสต์ 12 เดือนล่าสุดของบัญชีที่ sync โพสต์</p>
         </div>
       )}
+
 
       {shown.length > 0 && <MediaKit accounts={shown} stats={stats} rows={rows} total={total} views12={views12} />}
 

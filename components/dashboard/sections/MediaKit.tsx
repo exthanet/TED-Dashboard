@@ -4,7 +4,8 @@
 // each show's last 90 days, and the top clips with links. Numbers come from masterData and
 // the sync's accountStats / audienceStats, so they match the rest of the dashboard.
 import { useEffect, useMemo, useState } from "react";
-import { Download, ExternalLink } from "lucide-react";
+import { Clapperboard, Download, ExternalLink, Eye, Heart, Tv, Users } from "lucide-react";
+import { PlatformMark } from "@/components/dashboard/shared/PlatformMark";
 import type { RecordRow } from "@/lib/dashboard/types";
 import { PLATFORM_LABEL, PROGRAM_GROUP, currentFollowers, groupOf, shortCount, type AccountStat, type SocialAccount } from "@/lib/dashboard/socialAccounts";
 import { loadAudience, type Audience } from "@/lib/socialAccountsData";
@@ -120,22 +121,43 @@ export function MediaKit({ accounts, stats, rows, total, views12 }: { accounts: 
   return (
     <section className="media-kit" id="media-kit">
       <div className="media-kit-head">
-        <div>
+        <div className="media-kit-title">
           <h2>Media Kit</h2>
-          <p>สำหรับทีมขาย · ข้อมูลถึง {dateLabel(last)} · ตัวเลขจากโพสต์ในระบบ ผู้ติดตามจากบอร์ดด้านบน</p>
+          <span>ภาพรวม 12 เดือน · ข้อมูลถึง {dateLabel(last)}</span>
         </div>
         <button className="tv-add" onClick={exportCsv}>
           <Download size={14} /> Export CSV
         </button>
       </div>
 
-      <h3>ภาพรวม 12 เดือน</h3>
       <div className="media-kit-kpis">
-        <div>ผู้ติดตามรวม<b>{shortCount(total)}</b>{full(total)} คน · {accounts.length} บัญชี</div>
-        <div>วิวออนไลน์<b>{shortCount(views12)}</b>{full(kpi.posts)} โพสต์</div>
-        <div>Engagement<b>{shortCount(kpi.likes + kpi.comments + kpi.shares)}</b>ไลก์ {shortCount(kpi.likes)} · คอมเมนต์ {shortCount(kpi.comments)} · แชร์ {shortCount(kpi.shares)}</div>
-        <div>คลิปเกิน 1 ล้านวิว<b>{full(kpi.million)}</b>เกิน 10 ล้าน {full(kpi.tenMillion)} คลิป</div>
-        {kpi.tv > 0 && <div>ผู้ชม TV<b>{shortCount(kpi.tv)}</b>One31 + GMM25</div>}
+        <div>
+          <span className="media-kit-kpi-label"><Users size={15} aria-hidden="true" /> ผู้ติดตามรวม</span>
+          <b>{shortCount(total)}</b>
+          {full(total)} คน · {accounts.length} บัญชี
+        </div>
+        <div>
+          <span className="media-kit-kpi-label"><Eye size={15} aria-hidden="true" /> วิวออนไลน์</span>
+          <b>{shortCount(views12)}</b>
+          {full(kpi.posts)} โพสต์
+        </div>
+        <div>
+          <span className="media-kit-kpi-label"><Heart size={15} aria-hidden="true" /> Engagement</span>
+          <b>{shortCount(kpi.likes + kpi.comments + kpi.shares)}</b>
+          ไลก์ {shortCount(kpi.likes)} · คอมเมนต์ {shortCount(kpi.comments)} · แชร์ {shortCount(kpi.shares)}
+        </div>
+        <div>
+          <span className="media-kit-kpi-label"><Clapperboard size={15} aria-hidden="true" /> คลิปเกิน 1 ล้านวิว</span>
+          <b>{full(kpi.million)}</b>
+          เกิน 10 ล้าน {full(kpi.tenMillion)} คลิป
+        </div>
+        {kpi.tv > 0 && (
+          <div>
+            <span className="media-kit-kpi-label"><Tv size={15} aria-hidden="true" /> ผู้ชม TV</span>
+            <b>{shortCount(kpi.tv)}</b>
+            One31 + GMM25
+          </div>
+        )}
       </div>
 
       <h3>
@@ -149,8 +171,12 @@ export function MediaKit({ accounts, stats, rows, total, views12 }: { accounts: 
             const ageMax = Math.max(1, ...AGES.map((x) => au.age[x] || 0));
             return (
               <div key={a.id}>
-                <strong>{groupOf(a)}</strong>
-                <span className="media-kit-sub">{PLATFORM_LABEL[a.platform]} · {a.name}</span>
+                <span className="media-kit-aud-head">
+                  <PlatformMark platform={a.platform} />
+                  <strong>{PLATFORM_LABEL[a.platform]}</strong>
+                  <span>· {groupOf(a)}</span>
+                </span>
+                <span className="media-kit-sub">{a.name}</span>
                 <span className="media-kit-gender" title={Object.entries(au.gender).map(([k, v]) => `${GENDER_LABEL[k] || k} ${v.toFixed(0)}%`).join(" · ")}>
                   <i style={{ width: `${m}%`, background: "#378add" }} />
                   <i style={{ width: `${f}%`, background: "#d4537e" }} />
@@ -205,9 +231,8 @@ export function MediaKit({ accounts, stats, rows, total, views12 }: { accounts: 
           <thead>
             <tr>
               <th>#</th>
-              <th>คลิป</th>
-              <th>รายการ</th>
-              <th>แพลตฟอร์ม</th>
+              <th>ชื่อคลิป</th>
+              <th>แพลตฟอร์ม / รายการ</th>
               <th className="num">วิว</th>
             </tr>
           </thead>
@@ -224,8 +249,10 @@ export function MediaKit({ accounts, stats, rows, total, views12 }: { accounts: 
                     r.topic
                   )}
                 </td>
-                <td>{r.program}</td>
-                <td>{r.platform}</td>
+                <td className="media-kit-where">
+                  <PlatformMark platform={r.platform} size={14} />
+                  {r.platform} · {r.program}
+                </td>
                 <td className="num">{full(r.views)}</td>
               </tr>
             ))}
