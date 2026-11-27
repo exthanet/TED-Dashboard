@@ -1,6 +1,6 @@
 // "360°" with an orbit, all in the text colour (currentColor): white on the black menu,
 // dark on the light one. Sized in em so it sits on the line of text
-// beside it ("360 Insights" in the menu and the phone header).
+// beside it ("360 Dashboard" in the menu and the phone header).
 export function Mark360({ className = "" }: { className?: string }) {
   return (
     <svg className={`mark-360 ${className}`} viewBox="0 0 46 24" aria-hidden="true">

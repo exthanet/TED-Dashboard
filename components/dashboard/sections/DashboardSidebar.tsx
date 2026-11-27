@@ -305,7 +305,7 @@ export function DashboardSidebar({
             {/* "360" drawn as its mark, then the word. */}
             <span className="brand-sub">
               <Mark360 />
-              Insights
+              {BRAND.productWord}
             </span>
           </h1>
         </div>

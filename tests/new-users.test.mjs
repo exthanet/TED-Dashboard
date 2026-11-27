@@ -18,7 +18,7 @@ test("only accounts created after the last check, oldest first", () => {
 test("one line per person: name, email, role, how they came in, Bangkok time", () => {
   const text = newUsersMessage(newUsersSince(users, "2026-10-16T00:00:00Z"));
   const lines = text.split("\n");
-  assert.equal(lines[0], "👤 ผู้ใช้ใหม่ 2 คน ใน TERO 360 Insights");
+  assert.equal(lines[0], "👤 ผู้ใช้ใหม่ 2 คน ใน TERO 360 Dashboard");
   assert.equal(lines[1], "• c@example.com · สิทธิ์ content · admin สร้างบัญชีให้ · 16 ต.ค. 13:30");
   assert.equal(lines[2], "• บี (b@example.com) · สิทธิ์ viewer · ล็อกอิน Microsoft ครั้งแรก · 16 ต.ค. 14:05");
   assert.match(lines[3], /จัดการผู้ใช้: https:\/\/digital-dashboard\.terodigital\.com$/);

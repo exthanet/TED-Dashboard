@@ -24,7 +24,7 @@ export function MobileHeader({
           <img src="/brand/tero-digital-dark.png" alt="" />
           <span className="brand-sub">
             <Mark360 />
-            Insights
+            {BRAND.productWord}
           </span>
         </strong>
         <span className="mobile-header-spacer" />

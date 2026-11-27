@@ -6,7 +6,9 @@ export const BRAND = {
   /** Company badge on the sign-in screens. */
   company: "TERO DIGITAL",
   /** Full product name. */
-  product: "TERO 360 Insights",
+  product: "TERO 360 Dashboard",
   /** Product name without the company, for the large sign-in title. */
-  productShort: "360 Insights",
+  productShort: "360 Dashboard",
+  /** The word after the drawn 360 mark in the menu and phone header. */
+  productWord: "Dashboard",
 } as const;

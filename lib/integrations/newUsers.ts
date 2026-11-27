@@ -33,5 +33,5 @@ export function newUsersMessage(users: UserProfile[]): string {
     const who = name && name !== u.email ? `${name} (${u.email})` : u.email || u.uid;
     return `• ${who} · สิทธิ์ ${u.role || "-"} · ${how(u)} · ${bangkokTime(u.createdAt || "")}`;
   });
-  return [`👤 ผู้ใช้ใหม่ ${users.length} คน ใน TERO 360 Insights`, ...lines, `ปรับสิทธิ์ได้ที่ จัดการผู้ใช้: ${DASHBOARD_URL}`].join("\n");
+  return [`👤 ผู้ใช้ใหม่ ${users.length} คน ใน TERO 360 Dashboard`, ...lines, `ปรับสิทธิ์ได้ที่ จัดการผู้ใช้: ${DASHBOARD_URL}`].join("\n");
 }

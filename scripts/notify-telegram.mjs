@@ -56,7 +56,7 @@ async function main() {
   let text;
   let newUsers = null;
   if (args.has("--test")) {
-    text = `🧪 ทดสอบแจ้งเตือนจาก TERO 360 Insights${process.env.RUN_URL ? `\n${process.env.RUN_URL}` : ""}`;
+    text = `🧪 ทดสอบแจ้งเตือนจาก TERO 360 Dashboard${process.env.RUN_URL ? `\n${process.env.RUN_URL}` : ""}`;
   } else {
     const runUrl = process.env.RUN_URL || "";
     const report = await thisRunReport(runUrl).catch((e) => {

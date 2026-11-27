@@ -234,7 +234,7 @@
 .brand-logo.light { display: none; }
 html[data-theme="light"] .brand-logo.dark { display: none; }
 html[data-theme="light"] .brand-logo.light { display: block; }
-/* Sized so "360 Insights" runs the same width as the 118px logo above it (Google Sans). */
+/* Sized so the product name runs the same width as the 118px logo above it (Google Sans). */
 .brand h1 span {
   font-size: 19.8px;
   line-height: 1.1;
@@ -243,7 +243,7 @@ html[data-theme="light"] .brand-logo.light { display: block; }
   white-space: nowrap;
 }
 
-/* "[360 mark] Insights": the mark is as tall as the line, so it doesn't outshine the word. */
+/* "[360 mark] Dashboard": the mark is about as tall as the letters, so it doesn't outshine the word. */
 .brand-sub {
   display: inline-flex;
   align-items: center;
@@ -251,12 +251,12 @@ html[data-theme="light"] .brand-logo.light { display: block; }
 }
 .mark-360 {
   display: block;
-  height: 1.3em;
+  height: 1.05em;
   width: auto;
   aspect-ratio: 46 / 24;
   flex-shrink: 0;
 }
-/* In the menu: mark + word run the logo width (118px). */
+/* In the menu: mark + word stay within the logo width (118px). */
 .brand h1 .brand-sub {
-  font-size: 18px;
+  font-size: 15.5px;
 }
