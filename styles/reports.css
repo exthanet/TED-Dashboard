@@ -297,6 +297,17 @@
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+/* Menu jumps land below the floating .top-tab-bar instead of under it. */
+#ranking,
+#ai-analysis,
+#platforms,
+#topics,
+#rating,
+#best,
+#compare {
+  scroll-margin-top: 70px;
+}
+
 .top-tab-bar {
   display: flex;
   justify-content: space-between;

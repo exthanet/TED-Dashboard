@@ -96,6 +96,15 @@
   }
 
   /* ---------- Section tabs + user menu ---------- */
+  #ranking,
+  #ai-analysis,
+  #platforms,
+  #topics,
+  #rating,
+  #best,
+  #compare {
+    scroll-margin-top: 120px; /* phone header + the tab bar under it */
+  }
   .top-tab-bar {
     top: 60px;
     padding: 4px;

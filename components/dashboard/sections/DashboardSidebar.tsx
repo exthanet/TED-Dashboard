@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent, type ReactNode } from "react";
 import type { DashboardModel } from "@/hooks/useDashboard";
 import type { User as AuthUser } from "@/lib/auth/types";
 import { isStale, type SyncStatus } from "@/lib/sync/status";
@@ -164,6 +164,9 @@ export function DashboardSidebar({
   const isAdmin = currentUser?.role === "admin";
   const allowed = (item: NavItem) => (!item.adminOnly || isAdmin) && (!item.perm || can(currentUser, item.perm));
   const [section, setSection] = useState("overview");
+  // The section picked in the menu stays highlighted until the person scrolls
+  // themselves: side-by-side sections share a top, and the smooth scroll passes others.
+  const pinned = useRef<string | null>(null);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [toolsOpen, setToolsOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
@@ -196,9 +199,15 @@ export function DashboardSidebar({
       // Page order differs from menu order, so take the section whose top is
       // closest above a line near the top of the screen. At the very bottom
       // the last sections can't reach that line, so take the lowest one.
+      if (pinned.current) {
+        setSection(pinned.current);
+        return;
+      }
       const atBottom =
         window.scrollY > 0 && window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4;
-      const line = atBottom ? Infinity : 90;
+      // Just below the floating Performance / Revenue / Affiliate bar (lower on phones).
+      const bar = document.querySelector(".top-tab-bar")?.getBoundingClientRect().bottom || 60;
+      const line = atBottom ? Infinity : bar + 36;
       let current = "overview";
       let best = -Infinity;
       for (const id of SECTION_IDS) {
@@ -213,9 +222,20 @@ export function DashboardSidebar({
       }
       setSection(current);
     };
+    const unpin = () => {
+      pinned.current = null;
+    };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    window.addEventListener("wheel", unpin, { passive: true });
+    window.addEventListener("touchstart", unpin, { passive: true });
+    window.addEventListener("keydown", unpin);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("wheel", unpin);
+      window.removeEventListener("touchstart", unpin);
+      window.removeEventListener("keydown", unpin);
+    };
   }, [activeTab]);
 
   // Mobile drawer: Esc closes it and the page behind it stops scrolling.
@@ -233,13 +253,32 @@ export function DashboardSidebar({
     };
   }, [menuOpen, setMenuOpen]);
 
-  const go = (item: NavItem) => {
+  const go = (item: NavItem, e: ReactMouseEvent) => {
     setMenuOpen(false);
     const tab = item.tab || "overview";
-    if (onTabChange && activeTab !== tab) onTabChange(tab);
+    const switching = activeTab !== tab;
+    if (onTabChange && switching) onTabChange(tab);
     // A page of its own opens at its top, not where the last page was scrolled to.
     if (item.tab) window.scrollTo({ top: 0, behavior: "instant" });
-    if (!item.tab) setSection(item.id);
+    pinned.current = item.tab || item.id === "overview" ? null : item.id;
+    if (item.tab) return;
+    setSection(item.id);
+    // A section of the overview: scroll to it ourselves. Coming from another page the
+    // overview is not drawn yet when the link is clicked, so wait for the section,
+    // jump there, and jump again once its charts have settled.
+    e.preventDefault();
+    window.history.replaceState(null, "", `#${item.id}`);
+    let tries = 0;
+    const jump = (again: boolean) => {
+      const el = document.getElementById(item.id);
+      if (!el) {
+        if (tries++ < 40) window.setTimeout(() => jump(again), 50);
+        return;
+      }
+      el.scrollIntoView(switching ? { behavior: "instant", block: "start" } : { block: "start" }); // same page: the site-wide smooth scrolling
+      if (again) window.setTimeout(() => pinned.current === item.id && el.scrollIntoView({ behavior: "instant", block: "start" }), 500);
+    };
+    window.setTimeout(() => jump(switching), 0);
   };
   const isActive = (item: NavItem) => (item.tab ? activeTab === item.tab : activeTab === "overview" && section === item.id);
   const run = (fn?: () => void) => () => {
@@ -280,7 +319,7 @@ export function DashboardSidebar({
                       key={item.id}
                       href={item.tab ? undefined : `#${item.id}`}
                       className={isActive(item) ? "active" : ""}
-                      onClick={() => go(item)}
+                      onClick={(e) => go(item, e)}
                       role={item.tab ? "button" : undefined}
                     >
                       {item.icon}
