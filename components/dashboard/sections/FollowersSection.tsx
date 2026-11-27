@@ -298,15 +298,21 @@ export function FollowersSection({ rows, isAdmin, openSettings }: { rows: Record
                             <ChevronDown size={15} />
                           </button>
                           {view === "platform" ? (
-                            <PlatformMark platform={g.key} />
+                            <>
+                              <PlatformMark platform={g.key} />
+                              <b>{g.label}</b>
+                            </>
                           ) : (
-                            <span className="followers-marks">
-                              {[...new Set(g.accounts.map((a) => a.platform))].map((p) => (
-                                <PlatformMark key={p} platform={p} size={13} />
-                              ))}
-                            </span>
+                            <>
+                              {/* By show: the show's name first, then its platforms. */}
+                              <b>{g.label}</b>
+                              <span className="followers-marks">
+                                {[...new Set(g.accounts.map((a) => a.platform))].map((p) => (
+                                  <PlatformMark key={p} platform={p} size={13} />
+                                ))}
+                              </span>
+                            </>
                           )}
-                          <b>{g.label}</b>
                         </td>
                         <td className="num">{g.accounts.length}</td>
                         <td className="num strong">{full(g.total)}</td>
