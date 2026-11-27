@@ -212,11 +212,18 @@ export interface PostTotals {
 type PostRow = { platform: string; channel: string; date: string; views: number; likes: number; comments: number; shares: number };
 const POST_PLATFORM: Partial<Record<SocialPlatform, string>> = { facebook: "Facebook", instagram: "Instagram", tiktok: "TikTok", youtube: "YouTube" };
 
-/** The account's posts from `from` to `to` in masterData (its brand's Channel on its platform); null when its posts are not synced. */
-export function accountPosts(a: SocialAccount, rows: PostRow[], from: string, to: string): PostTotals | null {
+/** "Platform|Channel" of the posts that belong to the account in masterData; null when its posts are not synced. */
+export function accountPostKey(a: SocialAccount): string | null {
   const channel = a.blogId ? BRAND_CHANNEL[a.blogId] : undefined;
   const platform = POST_PLATFORM[a.platform];
-  if (!channel || !platform) return null;
+  return channel && platform ? `${platform}|${channel}` : null;
+}
+
+/** The account's posts from `from` to `to` in masterData (its brand's Channel on its platform); null when its posts are not synced. */
+export function accountPosts(a: SocialAccount, rows: PostRow[], from: string, to: string): PostTotals | null {
+  const key = accountPostKey(a);
+  if (!key) return null;
+  const [platform, channel] = key.split("|");
   const t = { posts: 0, views: 0, likes: 0, comments: 0, shares: 0 };
   for (const r of rows) {
     if (r.platform !== platform || r.channel !== channel || r.date < from || r.date > to) continue;
@@ -235,6 +242,33 @@ export interface YearRow extends PostTotals {
   months: number;
   /** Followers on the year's last day (or the latest day of the running year). */
   followersEnd: number | null;
+}
+
+/**
+ * Online posts from `from` to `to` that no listed account covers (no account for that platform and
+ * Channel, or no Channel at all, e.g. videos removed before their channel was known), so the board's
+ * rows add up to the 12-month views. `by` lists each "Platform|Channel" with its views, largest first.
+ */
+export function unlinkedPosts(accounts: SocialAccount[], rows: PostRow[], from: string, to: string): (PostTotals & { by: { key: string; posts: number; views: number }[] }) | null {
+  const covered = new Set(accounts.map(accountPostKey).filter((k): k is string => !!k));
+  const t = { posts: 0, views: 0, likes: 0, comments: 0, shares: 0 };
+  const by = new Map<string, { key: string; posts: number; views: number }>();
+  for (const r of rows) {
+    if (r.platform === "TV" || r.date < from || r.date > to) continue;
+    const key = `${r.platform}|${(r.channel || "").trim()}`;
+    if (covered.has(key)) continue;
+    t.posts++;
+    t.views += r.views || 0;
+    t.likes += r.likes || 0;
+    t.comments += r.comments || 0;
+    t.shares += r.shares || 0;
+    const b = by.get(key) || { key, posts: 0, views: 0 };
+    b.posts++;
+    b.views += r.views || 0;
+    by.set(key, b);
+  }
+  if (!t.posts) return null;
+  return { ...t, er: t.views ? (t.likes + t.comments + t.shares) / t.views : null, by: [...by.values()].sort((x, y) => y.views - x.views) };
 }
 
 /** Calendar years, newest first: the account's post totals and its followers at the year's end. */

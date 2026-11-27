@@ -717,3 +717,6 @@
   .media-kit-audience { grid-template-columns: 1fr; }
   .followers-kpi strong { font-size: 36px; }
 }
+.followers-row-unlinked td { color: #6b7488; background: #fafbfd; border-top: 1px dashed #d8dde6; }
+.followers-row-unlinked td:first-child small { color: #8a94a6; font-size: 11px; }
+.followers-toggle-space { display: inline-block; width: 15px; flex-shrink: 0; }

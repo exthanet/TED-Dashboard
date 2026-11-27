@@ -13,6 +13,7 @@ import {
   SOCIAL_PLATFORMS,
   accountLogo,
   accountPosts,
+  unlinkedPosts,
   accountYears,
   type YearRow,
   accountUrl,
@@ -46,6 +47,11 @@ const VIEW_KEY = "followers-view";
 type View = "platform" | "group";
 
 const full = (v: number) => v.toLocaleString("en-US");
+/** "YouTube|" → "YouTube · ไม่มีชื่อช่อง", "Instagram|ถกไม่เถียง" → "Instagram · ถกไม่เถียง". */
+const groupLabel = (key: string) => {
+  const [platform, channel] = key.split("|");
+  return `${platform} · ${channel && channel !== "-" ? channel : "ไม่มีชื่อช่อง"}`;
+};
 const dayTh = (d: string) => (d ? dateLabel(d) : "");
 const initials = (name: string) => name.replace(/[^A-Za-z0-9ก-๙]/g, "").slice(0, 4).toUpperCase();
 
@@ -178,6 +184,12 @@ export function FollowersSection({ rows, isAdmin, openSettings }: { rows: Record
   const posts12 = useMemo(() => {
     const from = lastPostDay ? new Date(Date.parse(`${lastPostDay}T00:00:00Z`) - 364 * 86400000).toISOString().slice(0, 10) : "";
     return new Map(shown.map((a) => [a.id, lastPostDay ? accountPosts(a, rows, from, lastPostDay) : null]));
+  }, [rows, shown, lastPostDay]);
+  // Posts of the same 12 months no account on the board covers: one more row, so the rows add up to the views card.
+  const unlinked = useMemo(() => {
+    if (!lastPostDay) return null;
+    const from = new Date(Date.parse(`${lastPostDay}T00:00:00Z`) - 364 * 86400000).toISOString().slice(0, 10);
+    return unlinkedPosts(shown, rows, from, lastPostDay);
   }, [rows, shown, lastPostDay]);
 
   const growth = (a: SocialAccount) => {
@@ -361,6 +373,24 @@ export function FollowersSection({ rows, isAdmin, openSettings }: { rows: Record
                     </Fragment>
                   );
                 })}
+                {unlinked && (
+                  <tr
+                    className="followers-row-unlinked"
+                    title={["โพสต์ที่ไม่ตรงกับบัญชีไหนบนบอร์ด:", ...unlinked.by.map((b) => `${groupLabel(b.key)}: ${full(b.posts)} โพสต์ · ${shortCount(b.views)} วิว`)].join("\n")}
+                  >
+                    <td>
+                      <span className="followers-toggle-space" />
+                      <b>ยังไม่ผูกบัญชี</b>
+                      <small>{unlinked.by.length === 1 ? groupLabel(unlinked.by[0].key) : `${unlinked.by.length} กลุ่ม · ชี้เพื่อดูรายละเอียด`}</small>
+                    </td>
+                    <td className="num muted">–</td>
+                    <td className="num muted">–</td>
+                    <td className="num muted">–</td>
+                    <td className="num">{full(unlinked.posts)}</td>
+                    <td className="num">{shortCount(unlinked.views)}</td>
+                    <td className={`num ${unlinked.er != null ? "" : "muted"}`}>{unlinked.er != null ? `${(unlinked.er * 100).toFixed(1)}%` : "–"}</td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
