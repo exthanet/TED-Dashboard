@@ -28,6 +28,21 @@
     font-size: 15px;
     letter-spacing: 0.2px;
   }
+  .mobile-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .mobile-brand img {
+    display: block;
+    height: 30px;
+    width: auto;
+  }
+  .mobile-brand span {
+    font-size: 16px;
+    font-weight: 800;
+    white-space: nowrap;
+  }
   .mobile-header button {
     display: grid;
     place-items: center;

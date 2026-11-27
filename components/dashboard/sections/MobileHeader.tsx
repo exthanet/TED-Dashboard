@@ -18,7 +18,11 @@ export function MobileHeader({
         >
           {menuOpen ? <X /> : <Menu />}
         </button>
-        <strong>{BRAND.product}</strong>
+        {/* The bar is black in both themes, so it always takes the white-lettered logo. */}
+        <strong className="mobile-brand" aria-label={BRAND.product}>
+          <img src="/brand/tero-digital-dark.png" alt="" />
+          <span>{BRAND.productShort}</span>
+        </strong>
         <span className="mobile-header-spacer" />
       </header>
     </>
