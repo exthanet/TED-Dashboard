@@ -376,6 +376,7 @@ export default function Dashboard() {
               compareEnd={model.filterInputs.compareEnd}
               setCompareEnd={model.setCompareEnd}
               dataFirstDate={model.dataFirstDate}
+              kpiTrend={model.kpiTrend}
             />
             <ExecutiveInsights insights={model.insights} />
             <RankingSection

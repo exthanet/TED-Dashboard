@@ -15,9 +15,12 @@ export function ExecutiveInsights({
           </div>
         </div>
         {insights.map((x, i) => (
-          <p key={i}>
-            <b>{i + 1}</b>
-            {x}
+          <p key={x.label} title={x.hint}>
+            <span className="insight-head">
+              <b>{i + 1}</b>
+              {x.label}
+            </span>
+            {x.text}
           </p>
         ))}
       </section>

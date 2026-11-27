@@ -1,6 +1,7 @@
 "use client";
 import { Growth } from "@/components/dashboard/shared/Growth";
 import { Kpi } from "@/components/dashboard/shared/Kpi";
+import { Sparkline } from "@/components/dashboard/shared/Sparkline";
 import type { DashboardModel } from "@/hooks/useDashboard";
 import { compact, num, pct } from "@/lib/dashboard/format";
 import { COMPARE_OPTIONS } from "@/lib/dashboard/dates";
@@ -30,6 +31,7 @@ export function KpiSummary({
   compareEnd,
   setCompareEnd,
   dataFirstDate,
+  kpiTrend,
 }: Pick<
   DashboardModel,
   | "tvMode"
@@ -46,12 +48,17 @@ export function KpiSummary({
   | "compareEnd"
   | "setCompareEnd"
   | "dataFirstDate"
+  | "kpiTrend"
 >) {
   const modeLabel = COMPARE_OPTIONS.find((o) => o.value === compareMode)?.label || "";
   const rangeText = comparePeriod
     ? `${shortDate(comparePeriod.start, comparePeriod.start.slice(0, 4) !== comparePeriod.end.slice(0, 4))} – ${shortDate(comparePeriod.end, true)}`
     : "";
   const all = allProgramsMetrics;
+  const per = kpiTrend.grain === "day" ? "รายวัน" : "รายเดือน";
+  const spark = (points: typeof kpiTrend.total, color: string, label: string, fmt: (v: number) => string = compact) => (
+    <Sparkline points={points} color={color} label={`${label} ${per}`} format={fmt} />
+  );
   const compareText = comparePeriod ? `เทียบกับ${modeLabel} ${rangeText}` : "";
   // Only render a badge when there is a previous value to compare with.
   const badge = (value: number | null | undefined, label?: string) =>
@@ -103,6 +110,7 @@ export function KpiSummary({
           icon={<Globe2 />}
           label="ยอดวิวรวม TV + Digital"
           value={compact(metrics.totalCombinedViews)}
+          spark={spark(kpiTrend.total, "#e0262b", "ยอดวิวรวม TV + Digital")}
           detail={
             <SplitBar
               parts={[
@@ -119,6 +127,7 @@ export function KpiSummary({
           icon={<Activity />}
           label={tvMode ? "TV Audience ตามช่วงเวลา" : "ยอดวิว Digital"}
           value={compact(metrics.views)}
+          spark={spark(kpiTrend.views, "#2563eb", tvMode ? "TV Audience" : "ยอดวิว Digital")}
           detail={
             tvMode ? (
               `ONE31 + GMM25 · เฉลี่ย ${compact(metrics.avgDaily)} คน/วัน`
@@ -141,6 +150,7 @@ export function KpiSummary({
           icon={<Tv />}
           label="ผู้ชม TV"
           value={compact(metrics.tvAudience)}
+          spark={spark(kpiTrend.tv, TV_COLOR, "ผู้ชม TV")}
           detail={`รวม 2 ช่อง (One31 + GMM25) · ${num(metrics.tvBroadcastDays)} วันออกอากาศ · เฉลี่ย ${num(Math.round(metrics.tvAudiencePerDay))} คน/วันออกอากาศ`}
         />
         <Kpi
@@ -178,6 +188,7 @@ export function KpiSummary({
           icon={<Heart />}
           label="Engagement"
           value={compact(metrics.engagement)}
+          spark={tvMode ? undefined : spark(kpiTrend.engagement, "#db2777", "Engagement")}
           detail={
             tvMode
               ? "TV ไม่มี Social Engagement"

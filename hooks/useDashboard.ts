@@ -516,6 +516,36 @@ export function useDashboard(enabled = true) {
       uploads: sum(perf, (r) => r.uploadCount),
     };
   }, [rows, program, platform, vdoType, topicType, startDate, endDate, terms, tvMode]);
+  // The first-row cards' line charts: the same rows as each card, by day up to 62 days, by month beyond.
+  const kpiTrend = useMemo(() => {
+    const byDay = !!startDate && !!endDate && (Date.parse(endDate) - Date.parse(startDate)) / 86400000 + 1 <= 62;
+    const key = (d: string) => (byDay ? d : d.slice(0, 7));
+    const m = new Map<string, { date: string; digital: number; tv: number; views: number; engagement: number }>();
+    const at = (d: string) => {
+      const k = key(d);
+      let x = m.get(k);
+      if (!x) m.set(k, (x = { date: k, digital: 0, tv: 0, views: 0, engagement: 0 }));
+      return x;
+    };
+    digitalFiltered.forEach((r) => r.date && (at(r.date).digital += r.views));
+    filtered.forEach((r) => r.date && (r.platform === "TV" || r.ratingTotal > 0 || r.gmmRating > 0) && (at(r.date).tv += r.audienceTotal + r.gmmAudience));
+    performanceFiltered.forEach((r) => {
+      if (!r.date) return;
+      const x = at(r.date);
+      x.views += tvMode ? r.audienceTotal + r.gmmAudience : r.views;
+      x.engagement += r.engagement;
+    });
+    const list = [...m.values()].sort((a, b) => a.date.localeCompare(b.date));
+    const pick = (f: (x: (typeof list)[number]) => number) => list.map((x) => ({ date: x.date, value: f(x) }));
+    return {
+      grain: byDay ? ("day" as const) : ("month" as const),
+      total: pick((x) => x.digital + x.tv),
+      views: pick((x) => x.views),
+      // TV airs on some days only: a day without a broadcast is left out, not drawn as 0.
+      tv: pick((x) => x.tv).filter((p) => !byDay || p.value > 0),
+      engagement: pick((x) => x.engagement),
+    };
+  }, [digitalFiltered, filtered, performanceFiltered, tvMode, startDate, endDate]);
   const chartGrain = useMemo<"day" | "month" | "year">(
     () =>
       tvMode
@@ -1123,18 +1153,32 @@ export function useDashboard(enabled = true) {
             // audience than the views (e.g. Facebook posts), so skip those.
             .filter((r) => r.views >= 1000 && r.engagementRate <= 1)
             .sort((a, b) => b.engagementRate - a.engagementRate)[0];
+    // Each box: a heading saying what it is, then one plain sentence.
+    const where = (r: RecordRow) => [r.platform, r.program].filter((x) => x && x !== "ไม่ระบุ").join(" · ");
     return [
-      t
-        ? `${tvMode ? "รายการ TV" : "คลิป"} ยอดสูงสุด “${t.topic.slice(0, 68)}” ทำ ${compact(tvMode ? t.audienceTotal + t.gmmAudience : t.views)} ${tvMode ? "Audience" : "Views"}`
-        : "ยังไม่มี Top Content",
-      p
-        ? `${p.name} คิดเป็น ${platformTotal ? ((p.total / platformTotal) * 100).toFixed(1) : 0}% ของยอดรวมทุกแพลตฟอร์ม`
-        : "ยังไม่มีข้อมูลแพลตฟอร์ม",
-      e
-        ? `Engagement เด่น “${e.topic.slice(0, 58)}” ทำ ${pct(e.engagementRate)} — ควรต่อยอดรูปแบบ ${e.vdoType}`
-        : tvMode
-          ? "TV Audience แสดงจาก ONE31 + GMM25 โดยไม่คูณ Rating"
-          : "ยังไม่มีข้อมูล Engagement เพียงพอ",
+      {
+        label: "Top Views",
+        hint: tvMode ? "รายการ TV ที่มีผู้ชมมากที่สุดในช่วงที่เลือก" : "คลิปที่มียอดวิวสูงสุดในช่วงที่เลือก",
+        text: t
+          ? `“${t.topic.slice(0, 68)}” ได้ ${compact(tvMode ? t.audienceTotal + t.gmmAudience : t.views)} ${tvMode ? "ผู้ชม" : "วิว"}${where(t) ? ` (${where(t)})` : ""}`
+          : "ยังไม่มีคอนเทนต์ในช่วงนี้",
+      },
+      {
+        label: "Top Platform",
+        hint: "แพลตฟอร์มที่ได้ยอดวิวมากที่สุด เทียบกับยอดรวมทุกแพลตฟอร์ม",
+        text: p
+          ? `${p.name} ได้ยอดมากที่สุด ${compact(p.total)} คิดเป็น ${platformTotal ? ((p.total / platformTotal) * 100).toFixed(1) : 0}% ของยอดรวมทุกช่องทาง (รวม TV) ${compact(platformTotal)}`
+          : "ยังไม่มีข้อมูลแพลตฟอร์ม",
+      },
+      {
+        label: "Top Engagement",
+        hint: "คลิปที่คนกดไลก์ คอมเมนต์ และแชร์มากที่สุดเมื่อเทียบกับยอดวิว (นับคลิปที่มี 1,000 วิวขึ้นไป)",
+        text: e
+          ? `“${e.topic.slice(0, 58)}” คนมีส่วนร่วม ${pct(e.engagementRate)} ของยอดวิว${where(e) ? ` (${where(e)})` : ""} · ควรทำรูปแบบ ${e.vdoType} แบบนี้ต่อ`
+          : tvMode
+            ? "TV ไม่มีไลก์ คอมเมนต์ หรือแชร์ ผู้ชม TV มาจาก One31 + GMM25"
+            : "ยังไม่มีคลิปที่มีวิวพอจะเทียบ Engagement",
+      },
     ];
   }, [top, platforms, platformTotal, performanceFiltered, tvMode]);
   function applyRows(imported: RawRow[], name: string, fileTimestamp?: string) {
@@ -1479,6 +1523,7 @@ export function useDashboard(enabled = true) {
     topicTrend,
     q4Plan,
     insights,
+    kpiTrend,
     rankingRows,
     platformReportRows,
     programReportRows,
