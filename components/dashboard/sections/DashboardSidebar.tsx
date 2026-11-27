@@ -258,7 +258,12 @@ export function DashboardSidebar({
           <X />
         </button>
         <div className="brand">
-          <h1>{BRAND.product.toUpperCase()}</h1>
+          <h1 aria-label={BRAND.product}>
+            {/* The company logo in place of "TERO": white lettering on the black menu, the original on the light one. */}
+            <img className="brand-logo dark" src="/brand/tero-digital-dark.png" alt="" />
+            <img className="brand-logo light" src="/brand/tero-digital.png" alt="" />
+            <span>{BRAND.productShort}</span>
+          </h1>
         </div>
 
         <div className="sidebar-scroll">

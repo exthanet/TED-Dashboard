@@ -32,8 +32,8 @@
   flex: none;
   padding: 5px 7px;
   border-radius: 6px;
-  background: #eef4ff;
-  color: #0757e8;
+  background: var(--filter-soft, #f1f3f7);
+  color: var(--filter-ink, #1e2a42);
   font-weight: 800;
 }
 

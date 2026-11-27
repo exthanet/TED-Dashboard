@@ -19,12 +19,12 @@ body {
   inset: 0 auto 0 0;
   width: 210px;
   padding: 22px 12px;
-  background: linear-gradient(180deg, #04152b, #001123 72%, #03162c);
+  background: linear-gradient(180deg, #121212, #0a0a0a 72%, #101010);
   color: #fff;
   z-index: 30;
   display: flex;
   flex-direction: column;
-  box-shadow: 8px 0 30px #03235720;
+  box-shadow: 8px 0 30px #00000026;
 }
 .brand {
   padding: 0 8px 14px;
@@ -742,7 +742,7 @@ footer {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background: #04152b;
+    background: #0f0f0f;
     color: #fff;
     margin: -10px -10px 10px;
     padding: 12px;
@@ -1398,4 +1398,27 @@ footer {
 }
 .kpi-card .kpi-all b {
   font-weight: 800;
+}
+
+/* Filter bar: labels, the quick-range picker and the active-filter chips in the same ink as the text, on a light grey. */
+:root {
+  --filter-ink: #1e2a42;
+  --filter-soft: #f1f3f7;
+  --filter-line: #d8dde6;
+}
+.filter-box > span,
+html[data-theme="light"] .filter-box > span {
+  color: var(--filter-ink);
+}
+html[data-theme="light"] .date-filter .quick-range {
+  color: var(--filter-ink);
+  background: var(--filter-soft);
+}
+.filter-chip {
+  border-color: var(--filter-line);
+  background: var(--filter-soft);
+  color: var(--filter-ink);
+}
+.filter-chip:hover {
+  border-color: var(--filter-ink);
 }

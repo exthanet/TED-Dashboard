@@ -51,5 +51,5 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
-  --font-sans: "Noto Sans Thai", "Leelawadee UI", Tahoma, Arial, sans-serif;
+  --font-sans: "Google Sans", "Noto Sans Thai", "Leelawadee UI", Tahoma, Arial, sans-serif;
 }
